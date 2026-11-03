@@ -10,13 +10,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AccountType {
+  USER
+  NGO
+  ADMIN
+}
+
+enum ActiveRole {
+  CLAIMER
+  PROVIDER
+  NGO
+  ADMIN
+}
+
 // Every registered person is a row in this table.
 model User {
-  id           String   @id @default(cuid())
+  id           String      @id @default(cuid())
   name         String
-  email        String   @unique
-  mobile       String   @unique
+  email        String      @unique
+  mobile       String      @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  accountType  AccountType @default(USER)
+  activeRole   ActiveRole  @default(CLAIMER)
+  orgName      String?
+  orgRegNo     String?
+  orgAddress   String?
+  isSuspended  Boolean     @default(false)
+  isMainAdmin  Boolean     @default(false)
+  sessions     Session[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// One row per logged-in session. Only the HASH of the refresh token
+// is stored, never the token itself.
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshHash String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
 }
