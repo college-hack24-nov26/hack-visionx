@@ -26,3 +26,15 @@
 - **Sabudana Khichdi** - Sago pearls cooked with peanuts, potato and mild spices. A Maharashtrian fasting-day favourite.
 - **Veg Kolhapuri** - Mixed vegetables in a spicy, fiery Kolhapuri masala gravy. Served with roti or rice.
 
+## Batch 3
+
+- **Modak** - Sweet rice-flour dumplings filled with coconut and jaggery. Lord Ganesh's favourite in Maharashtra.
+- **Gulab Jamun** - Soft, warm milk dumplings soaked in sugar syrup. A celebration sweet across India.
+- **Jalebi** - Crisp golden spirals soaked in sugar syrup, best served hot.
+- **Rasgulla** - Soft, spongy cheese balls in light sugar syrup. A famous Bengali sweet.
+- **Shrikhand** - Thick, creamy sweet curd flavoured with saffron and cardamom, served chilled.
+- **Puran Poli** - Soft flatbread stuffed with a sweet lentil-and-jaggery filling, served with ghee. A Maharashtrian festive dish.
+- **Kheer** - Slow-cooked rice pudding made with milk, cardamom and nuts, served warm or chilled.
+- **Mysore Pak** - A rich ghee and gram-flour sweet from Mysuru that melts in the mouth.
+- **Soan Papdi** - Light, flaky sweet cubes with a gentle cardamom flavour, often shared at festivals.
+- **Aloo Tikki** - Crisp spiced potato patties, served with chutneys as a popular street snack.
