@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useSavedLocation } from "../context/LocationContext";
+import { haversineKm } from "../lib/location";
 import ListingCard from "../components/ListingCard";
 import { CATEGORIES } from "../lib/format";
 
@@ -8,6 +10,7 @@ const VEG_SET = new Set(["VEG", "VEGAN"]);
 
 export default function Browse() {
   const { user } = useAuth();
+  const { saved, hasCoords: savedHasCoords } = useSavedLocation();
   const [listings, setListings] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
   const [reloadKey, setReloadKey] = useState(0);
@@ -17,6 +20,7 @@ export default function Browse() {
   const [cat, setCat] = useState("ALL");
   const [diet, setDiet] = useState("ALL");
   const [sort, setSort] = useState("TIME_ASC");
+  const [radius, setRadius] = useState("ANY");
   const [now, setNow] = useState(Date.now());
 
   const claimerRole = !!user && (user.accountType !== "USER" || user.activeRole === "CLAIMER");
@@ -68,12 +72,23 @@ export default function Browse() {
     else alert(data.error || "Could not cancel this claim");
   }
 
-  const shown = useMemo(() => {
-    const out = listings.filter((l) => {
+  // Distance from the saved location, computed on this device only.
+  const withDist = useMemo(() => listings.map((l) => ({
+    ...l,
+    distanceKm: savedHasCoords && l.latitude != null && l.longitude != null
+      ? haversineKm(saved.lat, saved.lng, l.latitude, l.longitude)
+      : null,
+  })), [listings, saved, savedHasCoords]);
+
+  const { shown, hiddenByRadius } = useMemo(() => {
+    let hidden = 0;
+    const radiusKm = savedHasCoords && radius !== "ANY" ? Number(radius) : null;
+    const out = withDist.filter((l) => {
       const hay = `${l.foodName} ${l.details || ""}`.toLowerCase();
       if (q && !hay.includes(q.trim().toLowerCase())) return false;
       if (cat !== "ALL" && l.category !== cat) return false;
       if (diet !== "ALL" && l.dietaryType !== diet) return false;
+      if (radiusKm != null && (l.distanceKm == null || l.distanceKm > radiusKm)) { hidden += 1; return false; }
       return true;
     });
     const byTime = (a, b) => new Date(a.deadline) - new Date(b.deadline);
@@ -83,8 +98,12 @@ export default function Browse() {
       out.sort((a, b) => (VEG_SET.has(b.dietaryType) ? 1 : 0) - (VEG_SET.has(a.dietaryType) ? 1 : 0) || byTime(a, b));
     else if (sort === "NONVEG_FIRST")
       out.sort((a, b) => (a.dietaryType === "NON_VEG" ? 0 : 1) - (b.dietaryType === "NON_VEG" ? 0 : 1) || byTime(a, b));
-    return out;
-  }, [listings, q, cat, diet, sort]);
+    else if (sort === "DIST_ASC")
+      out.sort((a, b) => (a.distanceKm == null ? Infinity : a.distanceKm) - (b.distanceKm == null ? Infinity : b.distanceKm) || byTime(a, b));
+    else if (sort === "DIST_DESC")
+      out.sort((a, b) => (b.distanceKm == null ? -Infinity : b.distanceKm) - (a.distanceKm == null ? -Infinity : a.distanceKm) || byTime(a, b));
+    return { shown: out, hiddenByRadius: hidden };
+  }, [withDist, q, cat, diet, sort, radius, savedHasCoords]);
 
   return (
     <section className="browse-page">
@@ -108,8 +127,25 @@ export default function Browse() {
           <option value="TIME_DESC">Time left: high to low</option>
           <option value="VEG_FIRST">Vegetarian first</option>
           <option value="NONVEG_FIRST">Non-vegetarian first</option>
+          {savedHasCoords && <option value="DIST_ASC">Distance: nearest first</option>}
+          {savedHasCoords && <option value="DIST_DESC">Distance: farthest first</option>}
         </select>
+        {savedHasCoords && (
+          <select className="control-input" value={radius} onChange={(e) => setRadius(e.target.value)}>
+            <option value="ANY">Any distance</option>
+            <option value="2">Within 2 km</option>
+            <option value="5">Within 5 km</option>
+            <option value="10">Within 10 km</option>
+          </select>
+        )}
       </div>
+
+      {saved && !savedHasCoords && (
+        <p className="hint">Your saved location is an area name without coordinates, so distances are off. Open the 📍 menu in the top bar and use "Use my location" to switch them on.</p>
+      )}
+      {savedHasCoords && radius !== "ANY" && hiddenByRadius > 0 && (
+        <p className="hint">{hiddenByRadius} listing{hiddenByRadius === 1 ? "" : "s"} hidden by the distance filter — listings without a pickup point can't be distance-checked.</p>
+      )}
 
       {loading && <p>Loading listings…</p>}
       {!loading && error && <div className="form-error">{error}</div>}
@@ -117,7 +153,7 @@ export default function Browse() {
       {!loading && !error && listings.length > 0 && shown.length === 0 && <p>No listings match your search or filters.</p>}
       <div className="cards-grid">
         {shown.map((l) => (
-          <ListingCard key={l.id} listing={l} now={now} myClaim={claimByListing[l.id]} onCancelClaim={cancelClaim} />
+          <ListingCard key={l.id} listing={l} now={now} myClaim={claimByListing[l.id]} onCancelClaim={cancelClaim} distanceKm={l.distanceKm} />
         ))}
       </div>
     </section>

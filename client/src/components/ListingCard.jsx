@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { API_BASE } from "../lib/api";
 import { CATEGORIES, DIETARY, portionsText, timeLeft } from "../lib/format";
+import { formatKm } from "../lib/location";
 
 // "3 meals" style text for any count, reusing portionsText's own unit words
 function countText(listing, n) {
@@ -8,7 +9,7 @@ function countText(listing, n) {
   return s.replace(` of ${n}`, "").replace(" left", "");
 }
 
-export default function ListingCard({ listing, now, myClaim, onCancelClaim }) {
+export default function ListingCard({ listing, now, myClaim, onCancelClaim, distanceKm }) {
   const t = timeLeft(listing.deadline, now);
   const full = listing.status === "FULLY_CLAIMED";
   const badgeText = full
@@ -37,6 +38,9 @@ export default function ListingCard({ listing, now, myClaim, onCancelClaim }) {
         </p>
         <p className="card-meta">{portionsText(listing)}</p>
         <p className="card-meta">📍 {listing.pickupLocation}</p>
+        {distanceKm != null && (
+          <p className="card-meta"><span className="chip">📍 {formatKm(distanceKm)} away · straight-line</span></p>
+        )}
         <p className="card-meta">
           By {listing.provider?.orgName || listing.provider?.name || "Provider"} · ⏰ {t.label}
         </p>
