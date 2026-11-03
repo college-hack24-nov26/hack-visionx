@@ -3,6 +3,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const prisma = require('./prisma');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 
@@ -25,6 +28,7 @@ function publicUser(u) {
     id: u.id, name: u.name, email: u.email, mobile: u.mobile,
     accountType: u.accountType, activeRole: u.activeRole,
     orgName: u.orgName, orgRegNo: u.orgRegNo, orgAddress: u.orgAddress,
+    profilePhotoUrl: u.profilePhotoUrl, preferredLanguage: u.preferredLanguage,
     isSuspended: u.isSuspended, isMainAdmin: u.isMainAdmin,
     createdAt: u.createdAt,
   };
@@ -245,5 +249,43 @@ if (!['en', 'mr', 'hi'].includes(preferredLanguage)) errors.preferredLanguage = 
 });
 
 router.requireAuth = requireAuth;
+
+// ---- Profile photo (FR-A6): one avatar per user, verified by content ----
+const AVATAR_DIR = path.join(__dirname, 'uploads', 'avatars');
+const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+function sniffImage(buf) {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpg';
+  if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return 'png';
+  if (buf.length >= 6 && buf.toString('ascii', 0, 4) === 'GIF8') return 'gif';
+  if (buf.length >= 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP') return 'webp';
+  return null;
+}
+
+router.post('/profile/photo', requireAuth, (req, res) => {
+  avatarUpload.single('photo')(req, res, async (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'Photo must be 5 MB or smaller' });
+      return res.status(400).json({ error: 'Upload failed' });
+    }
+    try {
+      if (!req.file) return res.status(400).json({ error: 'No photo file was sent (field name: photo)' });
+      const ext = sniffImage(req.file.buffer);
+      if (!ext) return res.status(400).json({ error: 'That file is not an image - we check the file content, not its name' });
+      fs.mkdirSync(AVATAR_DIR, { recursive: true });
+      for (const old of ['jpg', 'png', 'gif', 'webp']) {
+        try { fs.unlinkSync(path.join(AVATAR_DIR, `${req.user.id}.${old}`)); } catch { /* no old file */ }
+      }
+      fs.writeFileSync(path.join(AVATAR_DIR, `${req.user.id}.${ext}`), req.file.buffer);
+      const updated = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { profilePhotoUrl: `/uploads/avatars/${req.user.id}.${ext}` },
+      });
+      return res.json({ user: publicUser(updated) });
+    } catch (e) {
+      return res.status(500).json({ error: 'Photo upload failed unexpectedly' });
+    }
+  });
+});
 router.requireNotSuspended = requireNotSuspended;
 module.exports = router;
