@@ -308,3 +308,7 @@
 .loc-prompt .recog-row { align-items: center; flex-wrap: wrap; gap: 8px; }
 .loc-prompt input { padding: 8px 12px; border-radius: 999px; border: 1px solid #cfe3d6; }
 .loc-chip { cursor: pointer; border: none; font: inherit; }
+
+/* Invite banner (FR-A7) */
+.invite-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--mint); color: var(--ink); border-radius: 999px; padding: 8px 16px; margin: 12px 0 0; font-weight: 600; }
+.invite-banner-close { background: none; border: none; font-size: 18px; line-height: 1; cursor: pointer; color: inherit; }

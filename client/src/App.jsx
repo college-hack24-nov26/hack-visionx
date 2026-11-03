@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import Nav from './components/Nav';
+import InviteBanner from './components/InviteBanner';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Browse from './pages/Browse';
@@ -108,6 +109,7 @@ function App() {
         <AuthProvider>
         <div className="page">
           <Nav />
+          <InviteBanner />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
