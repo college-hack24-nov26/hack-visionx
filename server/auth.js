@@ -226,6 +226,9 @@ router.patch('/profile', requireAuth, async (req, res) => {
     const errors = {};
     const name = (req.body?.name ?? req.user.name).trim();
     const mobile = normalizeMobile(req.body?.mobile ?? req.user.mobile);
+    const preferredLanguage = req.body?.preferredLanguage ?? req.user.preferredLanguage ?? 'en';
+if (!['en', 'mr', 'hi'].includes(preferredLanguage)) errors.preferredLanguage = 'Unsupported language';
+
     if (name.length < 2) errors.name = 'Please enter your full name';
     if (mobile.length !== 10) errors.mobile = 'Mobile number must be exactly 10 digits';
     if (Object.keys(errors).length > 0) return res.status(400).json({ errors });
@@ -234,7 +237,7 @@ router.patch('/profile', requireAuth, async (req, res) => {
       const clash = await prisma.user.findUnique({ where: { mobile } });
       if (clash) return res.status(409).json({ error: 'That mobile number is already used by another account' });
     }
-    const updated = await prisma.user.update({ where: { id: req.user.id }, data: { name, mobile } });
+    const updated = await prisma.user.update({ where: { id: req.user.id }, data: { name, mobile, preferredLanguage }});
     return res.json({ user: publicUser(updated) });
   } catch (err) {
     return res.status(500).json({ error: 'Profile update failed unexpectedly' });

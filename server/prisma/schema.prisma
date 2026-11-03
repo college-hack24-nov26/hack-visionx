@@ -75,6 +75,13 @@ model User {
   listings     Listing[]
   claims       Claim[]
   notifications Notification[]
+  ngoVerificationStatus String    @default("NONE")
+ngoDocFile            String?
+ngoDocName            String?
+ngoSubmittedAt        DateTime?
+ngoReviewNote         String?
+preferredLanguage     String    @default("en")
+
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -113,6 +120,9 @@ model Listing {
   showContact     Boolean         @default(false)
   safetyChecklist String[]        @default([])
   deadlineAlertsSent String[]     @default([])
+  latitude  Float?
+longitude Float?
+
   status          ListingStatus   @default(DRAFT)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -144,6 +154,11 @@ model Claim {
   codeEncrypted     String?
   verifyAttempts    Int         @default(0)
   verifyLockedUntil DateTime?
+  liveLat       Float?
+liveLng       Float?
+liveUpdatedAt DateTime?
+liveSharing   Boolean   @default(false)
+
   onWayAt           DateTime?
   collectedAt       DateTime?
   createdAt         DateTime    @default(now())
@@ -174,4 +189,16 @@ model Notification {
   relatedClaimId   String?
   read             Boolean          @default(false)
   createdAt        DateTime         @default(now())
+}
+
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorEmail String
+  action     String
+  targetType String
+  targetId   String?
+  detail     String?
+  createdAt  DateTime @default(now())
 }

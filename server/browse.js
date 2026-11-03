@@ -30,12 +30,12 @@ async function softAuth(req, res, next) {
   next();
 }
 
-const providerSelect = { select: { name: true, accountType: true, orgName: true } };
+const providerSelect = { select: { name: true, accountType: true, orgName: true, ngoVerificationStatus: true }};
 
 const cardFields = {
   id: true, foodName: true, category: true, categoryNote: true, dietaryType: true,
   portionType: true, portionCount: true, portionsRemaining: true, bulkUnit: true,
-  photoUrl: true, pickupLocation: true, deadline: true, status: true, createdAt: true,
+  photoUrl: true, pickupLocation: true, deadline: true, status: true, createdAt: true, latitude: true, longitude: true,
   provider: providerSelect,
 };
 
@@ -45,7 +45,12 @@ router.get('/', softAuth, async (req, res) => {
     orderBy: { deadline: 'asc' },
     select: cardFields,
   });
-  res.json({ listings });
+  const out = listings.map((l) => {
+  const v = l.provider?.accountType === 'NGO' && l.provider?.ngoVerificationStatus === 'VERIFIED';
+  return { ...l, providerVerified: v, provider: { ...l.provider, providerVerified: v } };
+});
+res.json({ listings: out });
+
 });
 
 router.get('/:id', softAuth, async (req, res) => {
@@ -56,7 +61,10 @@ router.get('/:id', softAuth, async (req, res) => {
   if (!listing) return res.status(404).json({ error: 'Listing not found' });
   const { showContact, contactPhone, ...pub } = listing;
   if (showContact && req.viewer) pub.contactPhone = contactPhone;
-  res.json({ listing: pub });
+  pub.providerVerified = pub.provider?.accountType === 'NGO' && pub.provider?.ngoVerificationStatus === 'VERIFIED';
+if (pub.provider) pub.provider.providerVerified = pub.providerVerified;
+
+res.json({ listing: pub });
 });
 
 module.exports = router;
