@@ -3,7 +3,7 @@
 export const translations = {
   en: {
     navHome: "Home",
-    navBrowse: "Browse food",
+    navBrowse: "Browse",
     navPostFood: "Post surplus food",
     navMyListings: "My Listings",
     navMyClaims: "My Claims",

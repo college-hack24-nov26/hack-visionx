@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './i18n/LanguageContext';
 import Nav from './components/Nav';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -104,7 +105,8 @@ function Home() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      <LanguageProvider> 
+        <AuthProvider>
         <div className="page">
           <Nav />
           <Routes>
@@ -123,6 +125,8 @@ function App() {
           </Routes>
         </div>
       </AuthProvider>
+        </LanguageProvider>
+
     </BrowserRouter>
   );
 }

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import NotificationsBell from './NotificationsBell';
 
 export default function Nav() {
   const { user, loading, logout, switchRole } = useAuth();
+  const { lang, setLang, t } = useLanguage();
   const navigate = useNavigate();
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState('');
@@ -27,28 +29,33 @@ export default function Nav() {
     <header className="nav">
       <Link to="/" className="nav-brand">Food Waste Saver</Link>
       <nav className="nav-links">
-        <Link to="/" className="nav-link">Home</Link>
-        <Link to="/browse" className="nav-link">Browse</Link>
-        <Link to="/faq" className="nav-link">FAQ</Link>
+        <Link to="/" className="nav-link">{t('navHome')}</Link>
+        <Link to="/browse" className="nav-link">{t('navBrowse')}</Link>
+        <Link to="/faq" className="nav-link">{t('navFaq')}</Link>
+        <div className="lang-switch" aria-label="Language">
+          <button type="button" className={lang === 'en' ? 'lang-btn active' : 'lang-btn'} onClick={() => setLang('en')}>EN</button>
+          <button type="button" className={lang === 'mr' ? 'lang-btn active' : 'lang-btn'} onClick={() => setLang('mr')}>मराठी</button>
+          <button type="button" className={lang === 'hi' ? 'lang-btn active' : 'lang-btn'} onClick={() => setLang('hi')}>हिंदी</button>
+        </div>
         {!loading && !user && (
           <>
-            <Link to="/login" className="btn btn-ghost">Login</Link>
-            <Link to="/register" className="btn btn-primary">Register</Link>
+            <Link to="/login" className="btn btn-ghost">{t('navLogin')}</Link>
+            <Link to="/register" className="btn btn-primary">{t('navRegister')}</Link>
           </>
         )}
         {!loading && user && (
           <>
             {(user.accountType !== 'USER' || user.activeRole === 'CLAIMER') && (
-              <Link to="/my-claims" className="nav-link">My Claims</Link>
+              <Link to="/my-claims" className="nav-link">{t('navMyClaims')}</Link>
             )}
             {user.activeRole === 'PROVIDER' && (
-              <Link to="/my-listings" className="nav-link">My Listings</Link>
+              <Link to="/my-listings" className="nav-link">{t('navMyListings')}</Link>
             )}
             {user.accountType === 'NGO' && (
-              <Link to="/ngo" className="nav-link">NGO Panel</Link>
+              <Link to="/ngo" className="nav-link">{t('navNgoPanel')}</Link>
             )}
             {user.accountType === 'ADMIN' && (
-              <Link to="/admin" className="nav-link">Admin</Link>
+              <Link to="/admin" className="nav-link">{t('navAdmin')}</Link>
             )}
             <NotificationsBell />
             <span className="nav-user">{user.name}</span>
@@ -63,7 +70,7 @@ export default function Nav() {
                   disabled={switching}
                   onClick={() => handleSwitch('CLAIMER')}
                 >
-                  Claimer
+                  {t('roleClaimer')}
                 </button>
                 <button
                   type="button"
@@ -71,12 +78,12 @@ export default function Nav() {
                   disabled={switching}
                   onClick={() => handleSwitch('PROVIDER')}
                 >
-                  Donor
+                  {t('roleDonor')}
                 </button>
               </div>
             )}
             <button type="button" className="btn btn-ghost" onClick={handleLogout}>
-              Logout
+              {t('navLogout')}
             </button>
           </>
         )}
