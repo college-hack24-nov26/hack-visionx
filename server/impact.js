@@ -1,4 +1,4 @@
-// Impact wall data (FR-I1): every figure is computed from real
+﻿// Impact wall data (FR-I1): every figure is computed from real
 // records in the database. Nothing here is typed in or estimated.
 // FR-I2 adds /me: the signed-in user's own impact, same rule.
 const express = require('express');
@@ -10,7 +10,7 @@ const LIVE_FAMILY = ['LIVE', 'PARTIALLY_CLAIMED', 'FULLY_CLAIMED'];
 
 router.get('/', async (req, res) => {
   const now = new Date();
-  const [agg, listingsShared, liveNow, donors, claimers] = await Promise.all([
+  const [agg, listingsShared, liveNow, donors, claimers, listingsCreated, listedAgg, claimedAgg, expiredListings, redistAgg] = await Promise.all([
     prisma.claim.aggregate({
       where: { status: 'COLLECTED' },
       _sum: { portions: true },
@@ -28,7 +28,20 @@ router.get('/', async (req, res) => {
       select: { claimerId: true },
       distinct: ['claimerId'],
     }),
+    prisma.listing.count(),
+    prisma.listing.aggregate({
+      where: { status: { not: 'DRAFT' } },
+      _sum: { portionCount: true },
+    }),
+    prisma.claim.aggregate({
+      where: { status: { in: ['CONFIRMED', 'COLLECTED'] } },
+      _sum: { portions: true },
+    }),
+    prisma.listing.count({ where: { status: 'EXPIRED' } }),
+    prisma.redistributionLog.aggregate({ _sum: { portions: true } }),
   ]);
+  const portionsCollected = agg._sum.portions || 0;
+  const portionsClaimed = claimedAgg._sum.portions || 0;
   res.json({
     impact: {
       portionsRescued: agg._sum.portions || 0,
@@ -37,6 +50,13 @@ router.get('/', async (req, res) => {
       donors: donors.length,
       peopleHelped: claimers.length,
       liveNow,
+      listingsCreated,
+      portionsListed: listedAgg._sum.portionCount || 0,
+      portionsClaimed,
+      portionsCollected,
+      completionRate: portionsClaimed > 0 ? Math.round((portionsCollected / portionsClaimed) * 1000) / 10 : 0,
+      expiredListings,
+      portionsRedistributed: redistAgg._sum.portions || 0,
     },
   });
 });
