@@ -83,4 +83,32 @@
 .form-photo { width: 100%; max-height: 220px; object-fit: cover; border-radius: 14px; margin-bottom: 8px; }
 .form-actions { display: flex; gap: 10px; margin-top: 16px; }
 
+/* Slice 4: claim panel */
+.claim-panel, .claim-done, .claim-mine { margin-top: 20px; padding: 18px; background: var(--mint); border-radius: 18px; }
+.claim-done { text-align: center; }
+.pickup-code { font-size: 2rem; font-weight: 800; letter-spacing: 0.18em; color: var(--primary); margin: 10px 0; }
+.pickup-qr { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 8px; }
+.stepper { display: flex; align-items: center; gap: 14px; margin: 10px 0 14px; }
+.stepper-value { font-size: 1.4rem; font-weight: 800; min-width: 2ch; text-align: center; }
+.btn-danger { background: #c0392b; color: #fff; }
 
+/* Slice 4: your-claim strip on browse cards */
+.card-claim { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 8px 10px; background: var(--mint); border-radius: 12px; font-weight: 700; }
+.btn-small { padding: 4px 12px; font-size: 0.85rem; }
+
+/* Slice 4: my claims */
+.claims-list { display: grid; gap: 16px; }
+.claim-card { display: flex; gap: 16px; background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 2px 10px rgba(32, 48, 42, 0.08); }
+.claim-photo { width: 120px; height: 120px; object-fit: cover; border-radius: 14px; flex-shrink: 0; }
+.claim-body { flex: 1; }
+.chip { background: var(--mint); color: var(--primary); font-weight: 700; padding: 4px 12px; border-radius: 999px; font-size: 0.85rem; white-space: nowrap; }
+.claim-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.claim-code-box { text-align: center; margin-top: 10px; }
+
+/* Slice 4: claims received in My Listings */
+.received-box { background: var(--mint); border-radius: 14px; padding: 12px 14px; margin-top: 10px; }
+.received-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(32, 48, 42, 0.08); }
+.verify-box { display: flex; gap: 8px; align-items: center; }
+.verify-input { text-transform: uppercase; letter-spacing: 0.12em; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(32, 48, 42, 0.25); width: 150px; font-weight: 700; }
+.verify-ok { color: var(--primary); font-weight: 700; }
+.verify-err { color: #c0392b; font-weight: 700; }

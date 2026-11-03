@@ -36,6 +36,9 @@ export default function Nav() {
         )}
         {!loading && user && (
           <>
+            {(user.accountType !== 'USER' || user.activeRole === 'CLAIMER') && (
+              <Link to="/my-claims" className="nav-link">My Claims</Link>
+            )}
             {user.activeRole === 'PROVIDER' && (
               <Link to="/my-listings" className="nav-link">My Listings</Link>
             )}

@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, API_BASE } from "../lib/api";
 import { CATEGORIES, DIETARY, SAFETY_LABELS, portionsText, timeLeft } from "../lib/format";
+import ClaimPanel from "../components/ClaimPanel";
 
 export default function ListingDetail() {
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let on = true;
@@ -19,7 +21,7 @@ export default function ListingDetail() {
       setLoading(false);
     });
     return () => { on = false; };
-  }, [id]);
+  }, [id, reloadKey]);
 
   if (loading) return <p>Loading…</p>;
   if (error) return (
@@ -68,7 +70,7 @@ export default function ListingDetail() {
           </>
         )}
 
-        <div className="notice">Claiming with a pickup code arrives in the next slice — this is where the claim button will live.</div>
+        <ClaimPanel listing={listing} onChanged={() => setReloadKey((k) => k + 1)} />
       </div>
     </section>
   );
