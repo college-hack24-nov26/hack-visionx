@@ -16,3 +16,24 @@ NGOs and claimers use the Browse page. It shows the food, how many portions are 
 
 ### 5. What happens after an NGO claims my listing?
 You get a notification, and the claimer gets a secret pickup code. When they come to collect, ask them for that code and confirm it in the app. The portions are then marked as collected.
+
+## For NGOs
+
+### 1. How do I register as an NGO?
+On the Register page, choose "NGO / organisation" and add your organisation name and registration detail. You can add your verification documents while registering, or later from the NGO Panel. Your account works straight away - you do not have to wait for verification before claiming food.
+
+### 2. Why do I need to upload verification documents?
+So an admin can check that your organisation is real. Verified NGOs get a "Verified NGO" label, which helps donors trust who is collecting their food.
+
+### 3. Which document types are accepted, and what is the file size limit?
+PDF, JPEG and PNG files, up to 20 MB per file. You can choose several files at once. A registration certificate is a good document to upload.
+
+### 4. How long does NGO verification take?
+There is no fixed time - an admin checks the documents by hand. You will get a notification with the result, and the result is also shown in your NGO Panel. You can claim food while you wait.
+
+### 5. What does it mean if my NGO remains unverified?
+You can still claim food - your claims simply do not show the "Verified NGO" label yet. If an admin kept your NGO unverified after checking, the reason is shown in your NGO Panel, so you know what to fix.
+
+### 6. How can I update my verification documents?
+In the NGO Panel, the verification documents section shows everything you have uploaded. You can remove a document or upload new ones any time - uploading a new document asks for a fresh check.
+
