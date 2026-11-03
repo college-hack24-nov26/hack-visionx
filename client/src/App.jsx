@@ -57,11 +57,13 @@ function Home() {
 
   const stats = impact
     ? [
-        { label: t('homeStatPortionsRescued'), value: impact.portionsRescued },
-        { label: t('homeStatPickupsCompleted'), value: impact.pickupsCompleted },
-        { label: t('homeStatListingsShared'), value: impact.listingsShared },
-        { label: t('homeStatDonors'), value: impact.donors },
-        { label: t('homeStatPeopleHelped'), value: impact.peopleHelped },
+        { label: t('homeStatListingsCreated'), value: impact.listingsCreated },
+        { label: t('homeStatPortionsListed'), value: impact.portionsListed },
+        { label: t('homeStatPortionsClaimed'), value: impact.portionsClaimed },
+        { label: t('homeStatPortionsCollected'), value: impact.portionsCollected },
+        { label: t('homeStatCompletionRate'), value: `${impact.completionRate}%` },
+        { label: t('homeStatPortionsRedistributed'), value: impact.portionsRedistributed },
+        { label: t('homeStatExpiredListings'), value: impact.expiredListings },
         { label: t('homeStatLiveNow'), value: impact.liveNow },
       ]
     : [];
