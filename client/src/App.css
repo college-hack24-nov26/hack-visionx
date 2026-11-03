@@ -324,3 +324,14 @@
 .dot-live { background: #1E9E6A; }
 .dot-static { background: #8a9a90; }
 .chip-active { background: var(--primary); color: #fff; }
+
+/* Reviews (P1) */
+.review-stars { color: var(--accent); letter-spacing: 2px; }
+.review-average { font-size: 1.05rem; }
+.review-list { display: grid; gap: 12px; margin-top: 12px; }
+.review-item { background: var(--mint); border-radius: 12px; padding: 10px 14px; }
+.review-item p { margin: 4px 0; }
+.review-form { margin-top: 10px; display: grid; gap: 8px; }
+.review-star-row { display: flex; gap: 2px; }
+.review-star { background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; color: #d8d8d8; padding: 2px; }
+.review-star.on { color: var(--accent); }

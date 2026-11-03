@@ -54,7 +54,7 @@ export default function ListingDetail() {
         <p className="card-meta">{portionsText(listing)}</p>
         <p className="card-meta">📍 Pickup: {listing.pickupLocation}</p>
         <p className="card-meta">⏰ Pickup before: {new Date(listing.deadline).toLocaleString()} ({t.label})</p>
-        <p className="card-meta">By {listing.provider?.orgName || listing.provider?.name || "Provider"}</p>
+        <p className="card-meta">By {listing.provider?.id ? <Link to={'/users/' + listing.provider.id}>{listing.provider?.orgName || listing.provider?.name}</Link> : (listing.provider?.orgName || listing.provider?.name || "Provider")}</p>
         {listing.providerVerified && (
           <p className="card-meta"><span className="verified-chip">✓ Verified NGO</span></p>
         )}

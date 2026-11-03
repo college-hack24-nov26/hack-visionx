@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { api, API_BASE, getAccessToken } from '../lib/api';
+import { starsText } from '../components/ReviewForm';
 
 const LANGS = [
   { code: 'en', label: 'English' },
@@ -23,6 +24,7 @@ export default function Profile() {
   const [photoBusy, setPhotoBusy] = useState(false);
   const [invite, setInvite] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [myReviews, setMyReviews] = useState(null);
 
   useEffect(() => {
     if (user && !seeded) {
@@ -40,6 +42,14 @@ export default function Profile() {
   useEffect(() => {
     if (user) loadInvite();
   }, [user, loadInvite]);
+  useEffect(() => {
+    if (!user) return;
+    let on = true;
+    api(`/api/reviews/user/${user.id}`).then(({ status, data }) => {
+      if (on && status === 200) setMyReviews(data);
+    });
+    return () => { on = false; };
+  }, [user]);
 
   async function saveProfile() {
     setBusy(true); setError(''); setNotice('');
@@ -151,6 +161,25 @@ export default function Profile() {
             {user.accountType === 'NGO' && user.orgName ? ` · ${user.orgName}` : ''}
           </p>
         </div>
+
+        {myReviews && (
+          <>
+            <h2>Reviews about you</h2>
+            {myReviews.count === 0 ? (
+              <p>No reviews yet — they appear here after a completed pickup.</p>
+            ) : (
+              <>
+                <p><span className="review-stars">{starsText(Math.round(myReviews.average))}</span> <strong>{myReviews.average}</strong> · {myReviews.count} {myReviews.count === 1 ? "review" : "reviews"}</p>
+                {myReviews.reviews.map((r, i) => (
+                  <div key={i} className="review-item">
+                    <p><span className="review-stars">{starsText(r.stars)}</span> <strong>{r.reviewerName}</strong></p>
+                    {r.text && <p>{r.text}</p>}
+                  </div>
+                ))}
+              </>
+            )}
+          </>
+        )}
 
         <h2>Profile photo</h2>
         <div className="ngo-upload-row">

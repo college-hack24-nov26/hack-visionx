@@ -16,6 +16,7 @@ import Admin from './pages/Admin';
 import Faq from './pages/Faq';
 import NgoPanel from './pages/NgoPanel';
 import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -154,6 +155,7 @@ function App() {
             <Route path="/faq" element={<Faq />} />
             <Route path="/ngo" element={<NgoPanel />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/users/:id" element={<UserProfile />} />
           </Routes>
         </div>
       </AuthProvider>

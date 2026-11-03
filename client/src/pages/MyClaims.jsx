@@ -5,6 +5,7 @@ import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { portionsText } from "../lib/format";
 import PickupMap from "../components/PickupMap";
+import ReviewForm from "../components/ReviewForm";
 
 const STATUS_LABELS = {
   CONFIRMED: "Confirmed",
@@ -31,6 +32,7 @@ export default function MyClaims() {
   const [busyId, setBusyId] = useState("");
   const [actionError, setActionError] = useState({});
   const [impact, setImpact] = useState(null);
+  const [reviewedIds, setReviewedIds] = useState(new Set());
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -43,6 +45,15 @@ export default function MyClaims() {
     });
     return () => { on = false; };
   }, [user, reloadKey]);
+  useEffect(() => {
+    if (!user) return;
+    let on = true;
+    api("/api/reviews/mine").then(({ status, data }) => {
+      if (!on || status !== 200) return;
+      setReviewedIds(new Set((data.reviews || []).map((r) => r.claimId)));
+    });
+    return () => { on = false; };
+  }, [user]);
 
   // Silent refresh every 15 s so a donor's live location stays current.
   useEffect(() => {
@@ -181,6 +192,9 @@ export default function MyClaims() {
                   <p className="card-meta">🚶 On the way · {new Date(claim.onWayAt).toLocaleTimeString()}</p>
                 )}
                 {actionError[claim.id] && <div className="form-error">{actionError[claim.id]}</div>}
+                {claim.status === "COLLECTED" && !reviewedIds.has(claim.id) && (
+                  <ReviewForm claimId={claim.id} label="Rate this donor" />
+                )}
                 {claim.status === "CONFIRMED" && (
                   <>
                     {shown ? (
