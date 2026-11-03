@@ -48,3 +48,17 @@ export const SAFETY_LABELS = {
 };
 
 export const SAFETY_IDS = Object.keys(SAFETY_LABELS);
+
+
+export function timeAgo(dateStr, now = Date.now()) {
+  const ms = now - new Date(dateStr).getTime();
+  if (Number.isNaN(ms) || ms < 0) return "just now";
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+

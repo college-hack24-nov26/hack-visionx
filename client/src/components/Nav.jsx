@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationsBell from './NotificationsBell';
 
 export default function Nav() {
   const { user, loading, logout, switchRole } = useAuth();
@@ -42,6 +43,7 @@ export default function Nav() {
             {user.activeRole === 'PROVIDER' && (
               <Link to="/my-listings" className="nav-link">My Listings</Link>
             )}
+            <NotificationsBell />
             <span className="nav-user">{user.name}</span>
             {user.accountType !== 'USER' && (
               <span className="chip">{user.accountType}</span>

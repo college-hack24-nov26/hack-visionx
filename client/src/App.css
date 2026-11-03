@@ -112,3 +112,24 @@
 .verify-input { text-transform: uppercase; letter-spacing: 0.12em; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(32, 48, 42, 0.25); width: 150px; font-weight: 700; }
 .verify-ok { color: var(--primary); font-weight: 700; }
 .verify-err { color: #c0392b; font-weight: 700; }
+
+/* Slice 5: notifications bell */
+.bell-wrap { position: relative; }
+.bell-btn { position: relative; background: none; border: none; font-size: 1.25rem; cursor: pointer; padding: 6px; line-height: 1; }
+.bell-badge { position: absolute; top: -2px; right: -4px; background: var(--accent); color: var(--ink); font-size: 0.68rem; font-weight: 800; min-width: 18px; height: 18px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+.bell-overlay { position: fixed; inset: 0; z-index: 40; }
+.bell-panel { position: absolute; right: 0; top: calc(100% + 10px); width: 340px; max-width: 86vw; background: var(--bg); border-radius: 18px; box-shadow: 0 12px 32px rgba(32, 48, 42, 0.22); z-index: 50; padding: 10px; }
+.bell-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 10px; }
+.bell-markall { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; }
+.bell-empty { padding: 12px 6px; color: rgba(32, 48, 42, 0.65); }
+.bell-list { max-height: 380px; overflow-y: auto; display: grid; gap: 4px; }
+.bell-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 12px; cursor: pointer; }
+.bell-item:hover { background: rgba(30, 158, 106, 0.08); }
+.bell-unread { background: var(--mint); }
+.bell-icon { font-size: 1.05rem; }
+.bell-text { flex: 1; min-width: 0; }
+.bell-title { font-weight: 600; }
+.bell-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-right: 6px; }
+.bell-body { font-size: 0.88rem; color: rgba(32, 48, 42, 0.75); }
+.bell-time { font-size: 0.78rem; color: rgba(32, 48, 42, 0.55); margin-top: 2px; }
+.bell-x { background: none; border: none; font-size: 1rem; cursor: pointer; color: rgba(32, 48, 42, 0.55); padding: 0 2px; }
