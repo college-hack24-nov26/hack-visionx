@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function Login() {
   const { login } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,31 +19,31 @@ export default function Login() {
     const result = await login(email.trim(), password);
     setSubmitting(false);
     if (result.ok) navigate('/');
-    else setError(result.error || 'Login failed');
+    else setError(result.error || t('authLoginFailed'));
   }
 
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <h1>Login</h1>
-        <p className="auth-sub">Welcome back to Food Waste Saver.</p>
+        <h1>{t('navLogin')}</h1>
+        <p className="auth-sub">{t('authWelcomeBack')}</p>
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label htmlFor="login-email">Email</label>
+            <label htmlFor="login-email">{t('authEmail')}</label>
             <input id="login-email" type="email" autoComplete="email" required
               value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="field">
-            <label htmlFor="login-password">Password</label>
+            <label htmlFor="login-password">{t('authPassword')}</label>
             <input id="login-password" type="password" autoComplete="current-password" required
               value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Logging in...' : 'Login'}
+            {submitting ? t('authLoggingIn') : t('navLogin')}
           </button>
         </form>
-        <p className="auth-alt">New here? <Link to="/register">Register</Link></p>
+        <p className="auth-alt">{t('authNewHere')} <Link to="/register">{t('navRegister')}</Link></p>
       </section>
     </main>
   );
