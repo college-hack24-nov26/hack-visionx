@@ -23,6 +23,40 @@ enum ActiveRole {
   ADMIN
 }
 
+enum ListingCategory {
+  COOKED_MEALS
+  RAW_PRODUCE
+  BAKERY
+  DAIRY
+  PACKAGED_FOOD
+  BEVERAGES
+  OTHER
+}
+
+enum DietaryType {
+  VEG
+  NON_VEG
+  VEGAN
+}
+
+enum PortionType {
+  INDIVIDUAL_MEALS
+  BULK_SERVINGS
+  KILOGRAMS
+  LITRES
+  PACKETS
+}
+
+enum ListingStatus {
+  DRAFT
+  LIVE
+  PARTIALLY_CLAIMED
+  FULLY_CLAIMED
+  EXPIRED
+  CANCELLED
+  REMOVED
+}
+
 // Every registered person is a row in this table.
 model User {
   id           String      @id @default(cuid())
@@ -38,6 +72,7 @@ model User {
   isSuspended  Boolean     @default(false)
   isMainAdmin  Boolean     @default(false)
   sessions     Session[]
+  listings     Listing[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -51,4 +86,30 @@ model Session {
   refreshHash String
   expiresAt   DateTime
   createdAt   DateTime @default(now())
+}
+
+// One row per surplus-food posting. Drafts may be incomplete;
+// the publish endpoint enforces the full rules (FR-L1/L3).
+model Listing {
+  id              String          @id @default(cuid())
+  providerId      String
+  provider        User            @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  foodName        String          @default("")
+  details         String          @default("")
+  category        ListingCategory?
+  categoryNote    String?
+  dietaryType     DietaryType?
+  portionType     PortionType?
+  portionCount    Int?
+  portionsRemaining Int?
+  bulkUnit        String?
+  photoUrl        String?
+  pickupLocation  String          @default("")
+  deadline        DateTime?
+  contactPhone    String          @default("")
+  showContact     Boolean         @default(false)
+  safetyChecklist String[]        @default([])
+  status          ListingStatus   @default(DRAFT)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }

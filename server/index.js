@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const prisma = require('./prisma');
 const authRoutes = require('./auth');
+const path = require('path');
 
 const app = express();
 
@@ -25,6 +26,10 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/listings', require('./listings'));
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
