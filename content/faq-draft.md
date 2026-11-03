@@ -37,3 +37,26 @@ You can still claim food - your claims simply do not show the "Verified NGO" lab
 ### 6. How can I update my verification documents?
 In the NGO Panel, the verification documents section shows everything you have uploaded. You can remove a document or upload new ones any time - uploading a new document asks for a fresh check.
 
+## Recipients & food safety
+
+### 1. Who can claim a food donation?
+Anyone with a Claimer account, and registered NGOs. Anyone can look at the food, but you must sign in to claim it. You claim by portions, so you can take only some of a listing, not all of it.
+
+### 2. How do I know whether a listing is still available?
+The Browse page shows how many portions are left and how much time is left for each listing. Fully claimed listings are marked "Fully claimed", and listings past their deadline are removed.
+
+### 3. What should I check before accepting donated food?
+Check the deadline, how the food has been kept (this is written in the listing), and that the packet is properly closed when you collect it. Every donor must tick a food-safety checklist before posting - clean preparation, correct cooking time, no signs of spoilage, and covered packaging. If the food looks or smells bad when you collect it, do not accept it.
+
+### 4. What should I do if food appears unsafe or a listing is inaccurate?
+Do not accept or eat food that looks spoiled. If you have claimed it, you can cancel the claim from "My Claims" - cancelling at least 30 minutes before the deadline gives the portions back to the listing. Admins also watch listings and can remove ones that break the rules.
+
+## Accounts & privacy
+
+### 1. How do I update my profile information?
+Open Profile from the menu. You can change your name and your mobile number, then save. The change appears everywhere your name or number is shown in the app.
+
+### 2. Who can see my contact details and donation information?
+Your phone number is never public. A listing shows the donor's number only when the donor switches on "show contact" for that listing - and even then, only signed-in users and claimers with a confirmed claim can see it. People who are not signed in never see phone numbers. NGO verification documents are also private - only the NGO and the admins checking them can see them.
+
+
