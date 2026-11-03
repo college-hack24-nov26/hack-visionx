@@ -55,6 +55,9 @@ export default function ListingDetail() {
         <p className="card-meta">📍 Pickup: {listing.pickupLocation}</p>
         <p className="card-meta">⏰ Pickup before: {new Date(listing.deadline).toLocaleString()} ({t.label})</p>
         <p className="card-meta">By {listing.provider?.orgName || listing.provider?.name || "Provider"}</p>
+        {listing.providerVerified && (
+          <p className="card-meta"><span className="verified-chip">✓ Verified NGO</span></p>
+        )}
         {listing.contactPhone && (
           <p className="card-meta">📞 Donor contact: {listing.contactPhone}</p>
         )}

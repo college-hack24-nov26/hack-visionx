@@ -40,6 +40,9 @@ export default function ListingCard({ listing, now, myClaim, onCancelClaim }) {
         <p className="card-meta">
           By {listing.provider?.orgName || listing.provider?.name || "Provider"} · ⏰ {t.label}
         </p>
+        {listing.providerVerified && (
+          <p className="card-meta"><span className="verified-chip">✓ Verified NGO</span></p>
+        )}
         {myClaim && (
           <div className="card-claim">
             <span>✅ Your claim: {countText(listing, myClaim.portions)}</span>
