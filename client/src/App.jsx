@@ -11,6 +11,7 @@ import ListingForm from './pages/ListingForm';
 import MyClaims from './pages/MyClaims';
 import Admin from './pages/Admin';
 import Faq from './pages/Faq';
+import NgoPanel from './pages/NgoPanel';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -118,6 +119,7 @@ function App() {
             <Route path="/my-claims" element={<MyClaims />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/faq" element={<Faq />} />
+            <Route path="/ngo" element={<NgoPanel />} />
           </Routes>
         </div>
       </AuthProvider>
