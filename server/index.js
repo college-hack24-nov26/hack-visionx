@@ -33,6 +33,8 @@ app.use('/api/claims', require('./claims'));
 app.use('/api/notifications', require('./notifications'));
 require('./jobs').startJobs();
 app.use('/api/admin', require('./admin'));
+app.use('/api/impact', require('./impact'));
+
 
 
 
