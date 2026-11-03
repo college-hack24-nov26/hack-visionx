@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Nav from './components/Nav';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Browse from './pages/Browse';
+import ListingDetail from './pages/ListingDetail';
+import MyListings from './pages/MyListings';
+import ListingForm from './pages/ListingForm';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -27,7 +31,7 @@ function Home() {
           Food Waste Saver connects people who have surplus food with people
           and NGOs nearby who can use it — before it expires.
         </p>
-        <button className="btn" type="button">Browse surplus food</button>
+        <Link className="btn" to="/browse">Browse surplus food</Link>
       </section>
 
       <section className="card">
@@ -56,6 +60,11 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/browse" element={<Browse />} />
+            <Route path="/browse/:id" element={<ListingDetail />} />
+            <Route path="/my-listings" element={<MyListings />} />
+            <Route path="/listings/new" element={<ListingForm />} />
+            <Route path="/listings/:id/edit" element={<ListingForm />} />
           </Routes>
         </div>
       </AuthProvider>

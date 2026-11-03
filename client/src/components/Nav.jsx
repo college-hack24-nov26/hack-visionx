@@ -27,6 +27,7 @@ export default function Nav() {
       <Link to="/" className="nav-brand">Food Waste Saver</Link>
       <nav className="nav-links">
         <Link to="/" className="nav-link">Home</Link>
+        <Link to="/browse" className="nav-link">Browse</Link>
         {!loading && !user && (
           <>
             <Link to="/login" className="btn btn-ghost">Login</Link>
@@ -35,6 +36,9 @@ export default function Nav() {
         )}
         {!loading && user && (
           <>
+            {user.activeRole === 'PROVIDER' && (
+              <Link to="/my-listings" className="nav-link">My Listings</Link>
+            )}
             <span className="nav-user">{user.name}</span>
             {user.accountType !== 'USER' && (
               <span className="chip">{user.accountType}</span>
