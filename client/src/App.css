@@ -290,3 +290,12 @@
 .my-impact-card span { font-size: 13px; opacity: 0.75; }
 
 
+
+/* Profile (FR-A6/A7) */
+.nav-profile-link { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: inherit; }
+.nav-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none; }
+.nav-avatar-initial { display: inline-flex; align-items: center; justify-content: center; background: var(--primary); color: #fff; font-weight: 700; font-size: 14px; }
+.profile-avatar { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; }
+.profile-avatar-initial { display: inline-flex; align-items: center; justify-content: center; background: var(--primary); color: #fff; font-weight: 700; font-size: 32px; }
+.invite-link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.invite-link-box input { flex: 1; min-width: 220px; }

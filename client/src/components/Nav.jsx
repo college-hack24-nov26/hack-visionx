@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
+import { API_BASE } from '../lib/api';
 import NotificationsBell from './NotificationsBell';
 
 export default function Nav() {
@@ -58,7 +59,14 @@ export default function Nav() {
               <Link to="/admin" className="nav-link">{t('navAdmin')}</Link>
             )}
             <NotificationsBell />
-            <span className="nav-user">{user.name}</span>
+            <Link to="/profile" className="nav-profile-link">
+              {user.profilePhotoUrl ? (
+                <img className="nav-avatar" src={API_BASE + user.profilePhotoUrl} alt="" />
+              ) : (
+                <span className="nav-avatar nav-avatar-initial">{(user.name || '?').trim().charAt(0).toUpperCase()}</span>
+              )}
+              <span className="nav-user">{user.name}</span>
+            </Link>
             {user.accountType !== 'USER' && (
               <span className="chip">{user.accountType}</span>
             )}
