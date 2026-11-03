@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, API_BASE, getAccessToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -35,8 +35,8 @@ export default function ListingForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { saved: savedLoc, hasCoords: savedHasCoords } = useSavedLocation();
-  const [form, setForm] = useState(EMPTY);
+  const { saved: savedLoc } = useSavedLocation();
+  const [form, setForm] = useState(() => ({ ...EMPTY, pickupLocation: savedLoc?.label || "" }));
   const [checks, setChecks] = useState([]);
   const [savedId, setSavedId] = useState(id || null);
   const [photoUrl, setPhotoUrl] = useState("");
@@ -51,6 +51,8 @@ export default function ListingForm() {
   const [alternatives, setAlternatives] = useState([]);
   const [point, setPoint] = useState(null);
   const [pointBusy, setPointBusy] = useState(false);
+  const touched = useRef(new Set());
+  const recogSeq = useRef(0);
 
   useEffect(() => {
     if (!id) return;
@@ -76,6 +78,7 @@ export default function ListingForm() {
   }, [id]);
 
   function set(field, value) {
+    touched.current.add(field);
     setForm((f) => ({ ...f, [field]: value }));
     setErrors((e) => ({ ...e, [field]: undefined }));
   }
@@ -85,17 +88,9 @@ export default function ListingForm() {
     setErrors((e) => ({ ...e, safetyChecklist: undefined }));
   }
 
-  // FR-LOC2: typing over the pickup text clears the point, so the
-  // text and the point can never disagree.
   function onPickupText(v) {
     set("pickupLocation", v);
     if (point) setPoint(null);
-  }
-
-  function useSavedPoint() {
-    if (!savedLoc || !savedHasCoords) return;
-    setPoint({ lat: savedLoc.lat, lng: savedLoc.lng });
-    if (savedLoc.label) set("pickupLocation", savedLoc.label);
   }
 
   async function useCurrentPoint() {
@@ -156,7 +151,7 @@ export default function ListingForm() {
     const { status, data } = await api(`/api/listings/${lid}/publish`, { method: "POST" });
     setBusy(false);
     if (status === 200) { navigate("/my-listings"); return; }
-    if (status === 400 && data.errors) { setErrors(data.errors); setError("Some fields need attention before publishing — see below each field."); return; }
+    if (status === 400 && data.errors) { setErrors(data.errors); setError("Some fields need attention before publishing - see below each field."); return; }
     setError(data.error || "Could not publish this listing");
   }
 
@@ -183,10 +178,10 @@ export default function ListingForm() {
   }
 
   function applySuggestion(s) {
-    if (s.foodName) set("foodName", s.foodName);
-    if (s.description) set("details", s.description);
-    if (s.category && Object.prototype.hasOwnProperty.call(CATEGORIES, s.category)) set("category", s.category);
-    if (s.dietaryType && Object.prototype.hasOwnProperty.call(DIETARY, s.dietaryType)) set("dietaryType", s.dietaryType);
+    if (s.foodName && !form.foodName) set("foodName", s.foodName);
+    if (s.description && !form.details) set("details", s.description);
+    if (s.category && !touched.current.has("category") && Object.prototype.hasOwnProperty.call(CATEGORIES, s.category)) set("category", s.category);
+    if (s.dietaryType && !touched.current.has("dietaryType") && Object.prototype.hasOwnProperty.call(DIETARY, s.dietaryType)) set("dietaryType", s.dietaryType);
     setSuggestion(s);
   }
 
@@ -195,12 +190,13 @@ export default function ListingForm() {
     setSuggestion((prev) => ({ ...(prev || {}), foodName: a.foodName, confidence: a.confidence, source: a.source }));
   }
 
-  async function handleRecognize() {
-    if (!recogFile) { setError("Choose a photo first, then tap Recognize."); return; }
-    if (recogFile.size > 5 * 1024 * 1024) { setError("Photo must be 5 MB or smaller."); return; }
+  async function handleRecognize(file) {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setError("Photo must be 5 MB or smaller."); return; }
+    const mySeq = ++recogSeq.current;
     setRecogBusy(true); setError(""); setNotice("");
     const fd = new FormData();
-    fd.append("photo", recogFile);
+    fd.append("photo", file);
     try {
       const res = await fetch(`${API_BASE}/api/listings/recognize`, {
         method: "POST",
@@ -208,10 +204,12 @@ export default function ListingForm() {
         body: fd,
       });
       const data = await res.json().catch(() => ({}));
+      if (recogSeq.current !== mySeq) return;
       if (!res.ok) throw new Error(data.error || "Recognition failed");
       if (data.suggestion) applySuggestion(data.suggestion);
       setAlternatives(Array.isArray(data.alternatives) ? data.alternatives : []);
     } catch (err) {
+      if (recogSeq.current !== mySeq) return;
       const msg = err.message && err.message !== "Failed to fetch"
         ? err.message
         : "Recognition is unavailable right now - you can still type the details.";
@@ -219,10 +217,10 @@ export default function ListingForm() {
       setSuggestion(null);
       setAlternatives([]);
     }
-    setRecogBusy(false);
+    if (recogSeq.current === mySeq) setRecogBusy(false);
   }
 
-  if (authLoading || loadingListing) return <p>Loading…</p>;
+  if (authLoading || loadingListing) return <p>Loading...</p>;
   if (!user) return <p>Please <Link to="/login">log in</Link> to list food.</p>;
   if (user.activeRole !== "PROVIDER")
     return <div className="notice">You are in Claimer mode. Switch to <strong>Donor</strong> in the top bar to list food.</div>;
@@ -268,20 +266,18 @@ export default function ListingForm() {
           <label>Pickup point (for distances and the pickup map)</label>
           {point ? (
             <p className="recog-line">
-              📍 Point set: {point.lat.toFixed(5)}, {point.lng.toFixed(5)}{" "}
+              Point set: {point.lat.toFixed(5)}, {point.lng.toFixed(5)}{" "}
               <button type="button" className="chip" onClick={() => setPoint(null)}>Remove</button>
             </p>
           ) : (
-            <p className="hint">No point set — claimers won't see a distance or a map for this listing.</p>
+            <p className="hint">No point set - claimers won't see a distance or a map for this listing.</p>
           )}
           <div className="recog-row">
-            {savedHasCoords && (
-              <button type="button" className="btn btn-ghost" onClick={useSavedPoint}>Use my saved location</button>
-            )}
             <button type="button" className="btn btn-ghost" disabled={pointBusy} onClick={useCurrentPoint}>
-              {pointBusy ? "Locating…" : "Use current location"}
+              {pointBusy ? "Locating..." : "Use current location"}
             </button>
           </div>
+          <p className="hint">The point comes only from this device's current location, so it always matches where the food really is.</p>
           {errors.pickupPoint && <p className="field-error">{errors.pickupPoint}</p>}
         </div>
 
@@ -296,7 +292,7 @@ export default function ListingForm() {
         <p className="hint">Deadline can be at most 24 hours from now.</p>
 
         <div className="field">
-          <label>Food safety declarations — all 8 are required to publish</label>
+          <label>Food safety declarations - all 8 are required to publish</label>
           <div className="check-list">
             {SAFETY_IDS.map((cid) => (
               <label key={cid} className="check-row">
@@ -308,31 +304,39 @@ export default function ListingForm() {
           {errors.safetyChecklist && <p className="field-error">{errors.safetyChecklist}</p>}
         </div>
 
+        <div className="notice">
+          <strong>Terms, in plain words:</strong> the food you share is your responsibility. The declarations above are your promise that it was prepared and stored safely. If a claimer falls ill - including food poisoning - after eating food you provided, the responsibility is yours. Please share only food you would serve your own family.
+        </div>
+
         {!id && (
           <div className="field">
             <label>Recognize food from a photo</label>
-            <input type="file" accept="image/*" onChange={(e) => setRecogFile(e.target.files?.[0] || null)} />
-            <div className="recog-row">
-              <button type="button" className="btn btn-ghost" disabled={recogBusy || !recogFile} onClick={handleRecognize}>
-                {recogBusy ? "Recognizing…" : "📷 Recognize food from photo"}
-              </button>
-            </div>
-            {suggestion && (
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0] || null;
+                setRecogFile(f);
+                if (f) handleRecognize(f);
+              }}
+            />
+            {recogBusy && <p className="recog-line">Recognizing...</p>}
+            {suggestion && !recogBusy && (
               <p className="recog-line">
-                Looks like <strong>{suggestion.foodName}</strong> ({Math.round((suggestion.confidence || 0) * 100)}% sure · {sourceText(suggestion.source)})
+                Looks like <strong>{suggestion.foodName}</strong> ({Math.round((suggestion.confidence || 0) * 100)}% sure - {sourceText(suggestion.source)})
               </p>
             )}
-            {alternatives.length > 0 && (
+            {alternatives.length > 0 && !recogBusy && (
               <div className="recog-alts">
                 <span className="hint">Or maybe:</span>
                 {alternatives.map((a) => (
                   <button key={a.foodName} type="button" className="chip recog-chip" onClick={() => pickAlternative(a)}>
-                    {a.foodName} · {Math.round((a.confidence || 0) * 100)}%
+                    {a.foodName} - {Math.round((a.confidence || 0) * 100)}%
                   </button>
                 ))}
               </div>
             )}
-            <p className="hint">The suggestion fills the form — check it and change anything before publishing.</p>
+            <p className="hint">Recognition fills only the fields you have left empty - anything you typed stays yours.</p>
           </div>
         )}
 
