@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { portionsText, timeLeft } from "../lib/format";
+import LiveShareControl from "../components/LiveShareControl";
 
 const STATUS_LABELS = {
   DRAFT: "Draft",
@@ -22,7 +23,6 @@ const CLAIM_STATUS_LABELS = {
   EXPIRED: "Expired",
 };
 
-// "3 meals" style text for any count, reusing portionsText's own unit words
 function countText(listing, n) {
   const s = portionsText({ portionsRemaining: n, portionCount: n, bulkUnit: listing.bulkUnit, portionType: listing.portionType });
   return s.replace(` of ${n}`, "").replace(" left", "");
@@ -97,10 +97,10 @@ export default function MyListings() {
       setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: true, text: "Already collected earlier." } }));
       loadReceived();
     } else if (status === 200) {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: true, text: "✅ Collected — pickup complete." } }));
+      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: true, text: "Collected - pickup complete." } }));
       loadReceived();
     } else if (status === 401) {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: "Incorrect pickup code — check the code and try again." } }));
+      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: "Incorrect pickup code - check the code and try again." } }));
     } else if (status === 423) {
       setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: "Verification is locked after too many wrong tries. Wait 10 minutes." } }));
     } else {
@@ -108,7 +108,7 @@ export default function MyListings() {
     }
   }
 
-  if (authLoading) return <p>Loading…</p>;
+  if (authLoading) return <p>Loading...</p>;
   if (!user) return <p>Please <Link to="/login">log in</Link> to see your listings.</p>;
   if (user.activeRole !== "PROVIDER")
     return <div className="notice">You are in Claimer mode. Switch to <strong>Donor</strong> in the top bar to manage your listings.</div>;
@@ -119,7 +119,7 @@ export default function MyListings() {
         <h1>My listings</h1>
         <Link className="btn btn-primary" to="/listings/new">+ New listing</Link>
       </div>
-      {loading && <p>Loading…</p>}
+      {loading && <p>Loading...</p>}
       {!loading && error && <div className="form-error">{error}</div>}
       {!loading && !error && listings.length === 0 && <p>You have not listed any food yet.</p>}
       <div className="mine-list">
@@ -129,15 +129,15 @@ export default function MyListings() {
               {l.photoUrl ? (
                 <img className="mine-thumb" src={API_BASE + l.photoUrl} alt="" />
               ) : (
-                <div className="mine-thumb card-photo-empty">🍲</div>
+                <div className="mine-thumb card-photo-empty">FOOD</div>
               )}
               <div className="mine-main">
                 <div className="card-top">
                   <h3>{l.foodName}</h3>
                   <span className={`status-chip st-${l.status}`}>{STATUS_LABELS[l.status] || l.status}</span>
                 </div>
-                <p className="card-meta">{portionsText(l)} · ⏰ {timeLeft(l.deadline).label}</p>
-                <p className="card-meta">📍 {l.pickupLocation}</p>
+                <p className="card-meta">{portionsText(l)} - {timeLeft(l.deadline).label}</p>
+                <p className="card-meta">{l.pickupLocation}</p>
               </div>
               <div className="mine-actions">
                 {(l.status === "DRAFT" || l.status === "LIVE" || l.status === "PARTIALLY_CLAIMED") && (
@@ -153,11 +153,11 @@ export default function MyListings() {
                 <strong>Claims received</strong>
                 {claimsByListing[l.id].map((claim) => (
                   <div key={claim.id} className="received-row">
-                    <span>{claimerLabel(claim.claimer)} · {countText(l, claim.portions)}</span>
+                    <span>{claimerLabel(claim.claimer)} - {countText(l, claim.portions)}</span>
                     <span className="chip">{CLAIM_STATUS_LABELS[claim.status] || claim.status}</span>
-                    {claim.status === "CONFIRMED" && claim.onWayAt && <span>🚶 On the way</span>}
+                    {claim.status === "CONFIRMED" && claim.onWayAt && <span>On the way</span>}
                     {claim.status === "COLLECTED" && claim.collectedAt && (
-                      <span>✅ {new Date(claim.collectedAt).toLocaleTimeString()}</span>
+                      <span>Collected {new Date(claim.collectedAt).toLocaleTimeString()}</span>
                     )}
                     {claim.status === "CONFIRMED" && (
                       <span className="verify-box">
@@ -176,6 +176,11 @@ export default function MyListings() {
                     )}
                     {verifyMsg[claim.id] && (
                       <span className={verifyMsg[claim.id].ok ? "verify-ok" : "verify-err"}>{verifyMsg[claim.id].text}</span>
+                    )}
+                    {claim.status === "CONFIRMED" && (
+                      <div style={{ flexBasis: "100%" }}>
+                        <LiveShareControl claim={claim} />
+                      </div>
                     )}
                   </div>
                 ))}
