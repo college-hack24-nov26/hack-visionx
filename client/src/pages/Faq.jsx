@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const FAQ_GROUPS = [
   {
     title: 'For food donors',
+    titleKey: 'faqGroupDonors',
     items: [
       {
         q: `How do I donate surplus food?`,
@@ -28,6 +30,7 @@ const FAQ_GROUPS = [
   },
   {
     title: 'For NGOs',
+    titleKey: 'faqGroupNgos',
     items: [
       {
         q: `How do I register as an NGO?`,
@@ -57,6 +60,7 @@ const FAQ_GROUPS = [
   },
   {
     title: 'Recipients & food safety',
+    titleKey: 'faqGroupRecipients',
     items: [
       {
         q: `Who can claim a food donation?`,
@@ -78,6 +82,7 @@ const FAQ_GROUPS = [
   },
   {
     title: 'Accounts & privacy',
+    titleKey: 'faqGroupAccounts',
     items: [
       {
         q: `How do I update my profile information?`,
@@ -92,15 +97,16 @@ const FAQ_GROUPS = [
 ];
 
 export default function Faq() {
+  const { t } = useLanguage();
   const [openKey, setOpenKey] = useState('');
 
   return (
     <main>
       <section className="card">
-        <h1>Frequently asked questions</h1>
+        <h1>{t('faqTitle')}</h1>
         {FAQ_GROUPS.map((group, gi) => (
           <div key={group.title} className="faq-group">
-            <h2>{group.title}</h2>
+            <h2>{t(group.titleKey)}</h2>
             {group.items.map((item, ii) => {
               const key = `${gi}-${ii}`;
               const open = openKey === key;
