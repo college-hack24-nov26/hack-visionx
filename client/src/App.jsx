@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import Nav from './components/Nav';
 import InviteBanner from './components/InviteBanner';
+import ListingCard from './components/ListingCard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Browse from './pages/Browse';
@@ -24,6 +25,8 @@ function Home() {
   const [health, setHealth] = useState(null);
   const [failed, setFailed] = useState(false);
   const [impact, setImpact] = useState(null);
+  const [live, setLive] = useState(null);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     fetch(`${API_URL}/api/health`)
@@ -37,6 +40,18 @@ function Home() {
       .then((res) => res.json())
       .then((data) => setImpact(data.impact || null))
       .catch(() => setImpact(null));
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/browse`)
+      .then((res) => res.json())
+      .then((data) => setLive(data.listings || []))
+      .catch(() => setLive(null));
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
   }, []);
 
   const stats = impact
@@ -60,6 +75,21 @@ function Home() {
           <Link className="btn btn-ghost" to="/browse">{t('homeBrowseBtn')}</Link>
         </div>
       </section>
+
+      {live && (
+        <section className="card">
+          <h2>{t('homeStatLiveNow')}</h2>
+          {live.length === 0 ? (
+            <p>{t('homeLiveEmpty')}</p>
+          ) : (
+            <div className="cards-grid">
+              {live.slice(0, 6).map((l) => (
+                <ListingCard key={l.id} listing={l} now={now} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="card">
         <h2>{t('homeHowItWorks')}</h2>
