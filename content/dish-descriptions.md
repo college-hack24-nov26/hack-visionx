@@ -12,3 +12,17 @@
 - **Masala Dosa** - Crisp rice crepe with a spiced potato filling, served with sambar and chutney.
 - **Vada Pav** - A spiced potato fritter placed inside a pav with chutneys. Famous Mumbai street food.
 - **Puri Bhaji** - Puffed fried puris served with a spiced potato vegetable.
+
+## Batch 2
+
+- **Veg Biryani** - Fragrant long-grain rice cooked with mixed vegetables and whole spices, served hot, often with raita.
+- **Chole Bhature** - Spicy chickpea curry served with big, fluffy deep-fried bhature breads. A Punjabi favourite.
+- **Paneer Butter Masala** - Soft paneer cubes in a rich, creamy tomato-butter gravy. Best with naan or rice.
+- **Dal Tadka** - Yellow lentils cooked soft and finished with a hot ghee, garlic and cumin tempering. Served with rice or roti.
+- **Jeera Rice** - Plain basmati rice gently flavoured with cumin seeds and ghee. Goes with any curry or dal.
+- **Khichdi** - Rice and lentils cooked together into a soft, comforting one-pot meal, often served with ghee and pickle.
+- **Aloo Paratha** - Whole-wheat flatbread stuffed with spiced mashed potato, served hot with curd or pickle.
+- **Medu Vada** - Crisp outside, soft inside fried lentil rings, served with sambar and coconut chutney.
+- **Sabudana Khichdi** - Sago pearls cooked with peanuts, potato and mild spices. A Maharashtrian fasting-day favourite.
+- **Veg Kolhapuri** - Mixed vegetables in a spicy, fiery Kolhapuri masala gravy. Served with roti or rice.
+
