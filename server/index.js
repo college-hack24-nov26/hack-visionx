@@ -27,6 +27,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/listings/recognize', require('./recognize'));
 app.use('/api/listings', require('./listings'));
 app.use('/api/browse', require('./browse'));
 app.use('/api/claims', require('./claims'));
