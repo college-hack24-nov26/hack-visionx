@@ -10,6 +10,7 @@ import MyListings from './pages/MyListings';
 import ListingForm from './pages/ListingForm';
 import MyClaims from './pages/MyClaims';
 import Admin from './pages/Admin';
+import Faq from './pages/Faq';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -17,6 +18,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 function Home() {
   const [health, setHealth] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [impact, setImpact] = useState(null);
 
   useEffect(() => {
     fetch(`${API_URL}/api/health`)
@@ -25,16 +27,62 @@ function Home() {
       .catch(() => setFailed(true));
   }, []);
 
+  useEffect(() => {
+    fetch(`${API_URL}/api/impact`)
+      .then((res) => res.json())
+      .then((data) => setImpact(data.impact || null))
+      .catch(() => setImpact(null));
+  }, []);
+
+  const stats = impact
+    ? [
+        { label: 'Portions rescued', value: impact.portionsRescued },
+        { label: 'Pickups completed', value: impact.pickupsCompleted },
+        { label: 'Listings shared', value: impact.listingsShared },
+        { label: 'Donors', value: impact.donors },
+        { label: 'People helped', value: impact.peopleHelped },
+        { label: 'Live now', value: impact.liveNow },
+      ]
+    : [];
+
   return (
     <main>
       <section className="hero">
         <h1>Good food should never go to waste.</h1>
         <p>
-          Food Waste Saver connects people who have surplus food with people
-          and NGOs nearby who can use it — before it expires.
+          Food Waste Saver connects homes, hotels and events that have extra food
+          with nearby people and NGOs who can use it - before it expires.
         </p>
-        <Link className="btn" to="/browse">Browse surplus food</Link>
+        <div className="hero-actions">
+          <Link className="btn" to="/listings/new">Post surplus food</Link>
+          <Link className="btn btn-ghost" to="/browse">Browse food</Link>
+        </div>
       </section>
+
+      <section className="card">
+        <h2>How it works</h2>
+        <ol className="steps">
+          <li><strong>Post it</strong> - A donor adds the food, portions, pickup place and a deadline within 24 hours.</li>
+          <li><strong>Claim it</strong> - A nearby person or NGO claims the portions they can collect and gets a secret pickup code.</li>
+          <li><strong>Pick it up</strong> - The donor checks the code, the food is collected, and nothing goes to waste.</li>
+        </ol>
+        <p>Every donor must tick a food-safety checklist before posting, and every listing shows its deadline clearly.</p>
+      </section>
+
+      {impact && (
+        <section className="card">
+          <h2>Impact Wall</h2>
+          <p>Every collected portion is counted on our Impact Wall, so the whole community can see how much food was saved together.</p>
+          <div className="impact-grid">
+            {stats.map((s) => (
+              <div key={s.label} className="stat-card">
+                <div className="stat-value">{s.value}</div>
+                <div className="stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <h2>System status</h2>
@@ -69,6 +117,7 @@ function App() {
             <Route path="/listings/:id/edit" element={<ListingForm />} />
             <Route path="/my-claims" element={<MyClaims />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/faq" element={<Faq />} />
           </Routes>
         </div>
       </AuthProvider>

@@ -163,3 +163,70 @@
   background: #fde8e8;
   color: #9b1c1c;
 }
+
+/* Slice 7: impact wall + FAQ */
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.steps li {
+  margin-bottom: 8px;
+}
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.stat-card {
+  background: var(--mint);
+  border-radius: 14px;
+  padding: 16px 12px;
+  text-align: center;
+}
+.stat-value {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--ink);
+  opacity: 0.85;
+}
+.faq-group {
+  margin-bottom: 18px;
+}
+.faq-item {
+  border: 1px solid var(--mint);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.faq-q {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg);
+  border: none;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.faq-arrow {
+  color: var(--primary);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.faq-a {
+  margin: 0;
+  padding: 0 14px 12px;
+}

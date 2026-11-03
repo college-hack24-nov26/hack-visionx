@@ -29,6 +29,7 @@ export default function Nav() {
       <nav className="nav-links">
         <Link to="/" className="nav-link">Home</Link>
         <Link to="/browse" className="nav-link">Browse</Link>
+        <Link to="/faq" className="nav-link">FAQ</Link>
         {!loading && !user && (
           <>
             <Link to="/login" className="btn btn-ghost">Login</Link>
