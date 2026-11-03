@@ -1,6 +1,7 @@
 // NGO verification (P1): document upload + status for NGO accounts.
 // Documents are stored under server/uploads/docs/ and served by the
 // existing /uploads static route, so the admin can open them from the queue.
+// Redistribution log (FR-N4): verified NGOs record what they gave out.
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -77,6 +78,46 @@ router.get('/status', (req, res) => {
     submittedAt: u.ngoSubmittedAt,
     reviewNote: u.ngoReviewNote,
   });
+});
+
+// Redistribution log: create an entry for the signed-in NGO.
+router.post('/redistributions', requireNgo, async (req, res) => {
+  const portions = Number(req.body && req.body.portions);
+  const peopleServed = Number(req.body && req.body.peopleServed);
+  if (!Number.isInteger(portions) || portions <= 0) {
+    return res.status(400).json({ error: 'Portions must be a positive whole number' });
+  }
+  if (!Number.isInteger(peopleServed) || peopleServed <= 0) {
+    return res.status(400).json({ error: 'People served must be a positive whole number' });
+  }
+  const note = typeof (req.body && req.body.note) === 'string' && req.body.note.trim()
+    ? req.body.note.trim() : null;
+  const claimId = typeof (req.body && req.body.claimId) === 'string' && req.body.claimId.trim()
+    ? req.body.claimId.trim() : null;
+  try {
+    const entry = await prisma.redistributionLog.create({
+      data: { ngoId: req.user.id, claimId, portions, peopleServed, note },
+    });
+    res.status(201).json({ entry });
+  } catch (e) {
+    console.error('redistribution create failed:', e.message);
+    res.status(500).json({ error: 'Could not log the redistribution' });
+  }
+});
+
+// Redistribution log: the signed-in NGO's entries, newest first, plus totals.
+router.get('/redistributions', requireNgo, async (req, res) => {
+  const entries = await prisma.redistributionLog.findMany({
+    where: { ngoId: req.user.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  let totalPortions = 0;
+  let totalPeopleServed = 0;
+  for (const e of entries) {
+    totalPortions += e.portions;
+    totalPeopleServed += e.peopleServed;
+  }
+  res.json({ entries, totals: { totalPortions, totalPeopleServed } });
 });
 
 module.exports = router;
