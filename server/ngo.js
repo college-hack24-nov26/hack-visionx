@@ -94,9 +94,15 @@ router.post('/redistributions', requireNgo, async (req, res) => {
     ? req.body.note.trim() : null;
   const claimId = typeof (req.body && req.body.claimId) === 'string' && req.body.claimId.trim()
     ? req.body.claimId.trim() : null;
+  const DESTINATION_KINDS = ['Shelter', 'Old-age home', 'Orphanage', 'Street distribution', 'Other'];
+  const destinationKind = typeof (req.body && req.body.destinationKind) === 'string' && req.body.destinationKind.trim()
+    ? req.body.destinationKind.trim() : null;
+  if (destinationKind !== null && !DESTINATION_KINDS.includes(destinationKind)) {
+    return res.status(400).json({ error: 'Destination kind is not valid' });
+  }
   try {
     const entry = await prisma.redistributionLog.create({
-      data: { ngoId: req.user.id, claimId, portions, peopleServed, note },
+      data: { ngoId: req.user.id, claimId, portions, peopleServed, note, destinationKind },
     });
     res.status(201).json({ entry });
   } catch (e) {

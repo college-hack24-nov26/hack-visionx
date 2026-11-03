@@ -17,6 +17,7 @@ export default function NgoPanel() {
   const [rPeople, setRPeople] = useState('');
   const [rNote, setRNote] = useState('');
   const [rClaimId, setRClaimId] = useState('');
+  const [rKind, setRKind] = useState('Other');
   const [rBusy, setRBusy] = useState(false);
   const [rError, setRError] = useState('');
   const [rNotice, setRNotice] = useState('');
@@ -79,13 +80,13 @@ export default function NgoPanel() {
     if (!Number.isInteger(portions) || portions <= 0) { setRError('Portions must be a positive whole number.'); return; }
     if (!Number.isInteger(peopleServed) || peopleServed <= 0) { setRError('People served must be a positive whole number.'); return; }
     setRBusy(true); setRError(''); setRNotice('');
-    const body = { portions, peopleServed };
+    const body = { portions, peopleServed, destinationKind: rKind };
     if (rNote.trim()) body.note = rNote.trim();
     if (rClaimId.trim()) body.claimId = rClaimId.trim();
     const { status: code, data } = await api('/api/ngo/redistributions', { method: 'POST', body });
     if (code === 200 || code === 201) {
       setRNotice('Redistribution logged. Thank you!');
-      setRPortions(''); setRPeople(''); setRNote(''); setRClaimId('');
+      setRPortions(''); setRPeople(''); setRNote(''); setRClaimId(''); setRKind('Other');
       loadRedistributions();
     } else {
       setRError((data && data.error) || 'Could not log the redistribution.');
@@ -184,6 +185,16 @@ export default function NgoPanel() {
               <input type="number" min="1" step="1" value={rPeople} onChange={(e) => setRPeople(e.target.value)} />
             </label>
             <label>
+              Destination kind
+              <select value={rKind} onChange={(e) => setRKind(e.target.value)}>
+                <option value="Shelter">Shelter</option>
+                <option value="Old-age home">Old-age home</option>
+                <option value="Orphanage">Orphanage</option>
+                <option value="Street distribution">Street distribution</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <label>
               Note (optional)
               <input type="text" value={rNote} onChange={(e) => setRNote(e.target.value)} placeholder="e.g. Given out at the community hall" />
             </label>
@@ -201,7 +212,7 @@ export default function NgoPanel() {
                 {entries.map((e) => (
                   <div className="admin-row" key={e.id}>
                     <div className="admin-row-main">
-                      <strong>{e.portions} portions · {e.peopleServed} people served</strong>
+                      <strong>{e.portions} portions · {e.peopleServed} people served{e.destinationKind ? ` · ${e.destinationKind}` : ''}</strong>
                       <span className="admin-meta">{new Date(e.createdAt).toLocaleString()}</span>
                       {e.note && <span className="admin-meta">{e.note}</span>}
                     </div>
