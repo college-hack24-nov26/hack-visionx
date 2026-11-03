@@ -299,3 +299,12 @@
 .profile-avatar-initial { display: inline-flex; align-items: center; justify-content: center; background: var(--primary); color: #fff; font-weight: 700; font-size: 32px; }
 .invite-link-box { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .invite-link-box input { flex: 1; min-width: 220px; }
+
+
+
+/* Location prompt + Nav chip (FR-LOC) */
+.loc-prompt { background: var(--mint); border-radius: 16px; padding: 14px 18px; margin: 10px 16px; }
+.loc-prompt-title { margin: 0 0 4px; }
+.loc-prompt .recog-row { align-items: center; flex-wrap: wrap; gap: 8px; }
+.loc-prompt input { padding: 8px 12px; border-radius: 999px; border: 1px solid #cfe3d6; }
+.loc-chip { cursor: pointer; border: none; font: inherit; }
