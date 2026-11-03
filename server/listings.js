@@ -74,7 +74,23 @@ function extractFields(body, errors) {
       else data.deadline = d;
     }
   }
-  return data;
+  if (body.latitude !== undefined || body.longitude !== undefined) {
+  if (body.latitude === null && body.longitude === null) {
+    data.latitude = null;
+    data.longitude = null;
+  } else {
+    const la = Number(body.latitude);
+    const lo = Number(body.longitude);
+    if (Number.isFinite(la) && Number.isFinite(lo) && la >= -90 && la <= 90 && lo >= -180 && lo <= 180) {
+      data.latitude = la;
+      data.longitude = lo;
+    } else {
+      errors.pickupPoint = 'Pickup point needs a valid latitude and longitude together';
+    }
+  }
+}
+
+return data;
 }
 
 // Load a listing and check the caller owns it. Sends the error reply itself.

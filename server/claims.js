@@ -43,10 +43,17 @@ function decryptCode(payload) {
   return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
 }
 // Never let the hash/salt/encrypted copy leave the server in a claim object.
+function liveStateOf(c) {
+  if (!c.liveUpdatedAt) return null;
+  if (!c.liveSharing) return 'stopped';
+  return Date.now() - new Date(c.liveUpdatedAt).getTime() <= 60000 ? 'live' : 'stale';
+}
+
 function publicClaim(claim) {
   if (!claim) return claim;
   const { codeHash, codeSalt, codeEncrypted, ...pub } = claim;
-  return pub;
+  return { ...pub, liveState: liveStateOf(claim) };
+
 }
 
 // ---- Create a claim (FR-C1/C2/C3) ----
@@ -118,7 +125,8 @@ router.get('/mine', async (req, res) => {
     include: {
       listing: {
         select: {
-          id: true, foodName: true, photoUrl: true, pickupLocation: true, deadline: true,
+          id: true, foodName: true, photoUrl: true, pickupLocation: true, latitude: true, longitude: true, deadline: true,
+
           status: true, portionType: true, bulkUnit: true,
           provider: { select: { name: true, accountType: true, orgName: true } },
         },
@@ -206,6 +214,34 @@ await notify({
 
   res.json({ claim: publicClaim(updated) });
 });
+
+// ---- Donor shares live location for this claim (FR-M1) ----
+router.post('/:id/live-location', async (req, res) => {
+  const claim = await prisma.claim.findUnique({ where: { id: req.params.id }, include: { listing: true } });
+  if (!claim) return res.status(404).json({ error: 'Claim not found' });
+  if (claim.listing.providerId !== req.user.id) return res.status(403).json({ error: 'This is not your listing' });
+  if (claim.status !== 'CONFIRMED') return res.status(409).json({ error: 'This claim is no longer active' });
+  const latitude = Number(req.body?.latitude);
+  const longitude = Number(req.body?.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return res.status(400).json({ error: 'A valid location is required' });
+  }
+  const updated = await prisma.claim.update({
+    where: { id: claim.id },
+    data: { liveLat: latitude, liveLng: longitude, liveUpdatedAt: new Date(), liveSharing: true },
+  });
+  res.json({ claim: publicClaim(updated) });
+});
+
+// ---- Donor stops sharing live location (FR-M1) ----
+router.post('/:id/live-location/stop', async (req, res) => {
+  const claim = await prisma.claim.findUnique({ where: { id: req.params.id }, include: { listing: true } });
+  if (!claim) return res.status(404).json({ error: 'Claim not found' });
+  if (claim.listing.providerId !== req.user.id) return res.status(403).json({ error: 'This is not your listing' });
+  const updated = await prisma.claim.update({ where: { id: claim.id }, data: { liveSharing: false } });
+  res.json({ claim: publicClaim(updated) });
+});
+
 
 // ---- Donor verifies a pickup code (FR-C7) ----
 router.post('/:id/verify', async (req, res) => {
