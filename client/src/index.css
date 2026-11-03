@@ -1,0 +1,25 @@
+:root {
+  --bg: #fff9f1;
+  --primary: #1e9e6a;
+  --accent: #f2b33d;
+  --ink: #20302a;
+  --mint: #e7f4ec;
+  --card: #ffffff;
+  --shadow: 0 10px 30px rgba(32, 48, 42, 0.08);
+  --radius: 22px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+h1, h2, h3 {
+  font-family: 'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif;
+}
