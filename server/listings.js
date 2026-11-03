@@ -105,6 +105,10 @@ router.post('/', async (req, res) => {
   if (req.user.activeRole !== 'PROVIDER') {
     return res.status(403).json({ error: 'Switch to Donor mode to post food' });
   }
+  const recentCount = await prisma.listing.count({ where: { providerId: req.user.id, createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) } } });
+  if (recentCount >= 10) {
+    return res.status(429).json({ error: 'You are posting too quickly - please wait a little before adding more listings.' });
+  }
   const errors = {};
   const data = extractFields(req.body || {}, errors);
   if (Object.keys(errors).length) return res.status(400).json({ errors });
@@ -201,7 +205,7 @@ router.post('/:id/cancel', async (req, res) => {
   if (!['DRAFT', 'LIVE', 'PARTIALLY_CLAIMED'].includes(listing.status)) {
     return res.status(409).json({ error: 'This listing is already closed' });
   }
-  // Open claims on it are cancelled too — claims arrive in Slice 4.
+  // Open claims on it are cancelled too â€” claims arrive in Slice 4.
   const updated = await prisma.listing.update({ where: { id: listing.id }, data: { status: 'CANCELLED' } });
   const openClaims = await prisma.claim.findMany({ where: { listingId: listing.id, status: 'CONFIRMED' } });
   // FR-C8: open claims on a cancelled listing are cancelled by the provider.
