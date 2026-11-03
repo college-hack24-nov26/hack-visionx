@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useSavedLocation } from "../context/LocationContext";
+import { useLanguage } from "../i18n/LanguageContext";
 import { haversineKm } from "../lib/location";
 import ListingCard from "../components/ListingCard";
 import { CATEGORIES } from "../lib/format";
@@ -11,6 +12,7 @@ const VEG_SET = new Set(["VEG", "VEGAN"]);
 export default function Browse() {
   const { user } = useAuth();
   const { saved, hasCoords: savedHasCoords } = useSavedLocation();
+  const { t } = useLanguage();
   const [listings, setListings] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
   const [reloadKey, setReloadKey] = useState(0);
@@ -30,7 +32,7 @@ export default function Browse() {
     api("/api/browse").then(({ status, data }) => {
       if (!on) return;
       if (status === 200) setListings(data.listings || []);
-      else setError(data.error || "Could not load listings");
+      else setError(data.error || t("browseLoadFailed"));
       setLoading(false);
     });
     return () => { on = false; };
@@ -47,8 +49,8 @@ export default function Browse() {
   }, [user, claimerRole, reloadKey]);
 
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
   }, []);
 
   const claimByListing = useMemo(() => {
@@ -64,19 +66,19 @@ export default function Browse() {
   async function cancelClaim(claim, listing) {
     const mins = Math.round((new Date(listing.deadline) - Date.now()) / 60000);
     const msg = mins < 30
-      ? "Less than 30 minutes are left before the pickup deadline. If you cancel now, these portions will NOT go back for others to claim. Cancel anyway?"
-      : "Cancel this claim? The portions will go back for others to claim.";
+      ? t("browseCancelLate")
+      : t("browseCancelConfirm");
     if (!window.confirm(msg)) return;
     const { status, data } = await api(`/api/claims/${claim.id}/cancel`, { method: "POST" });
     if (status === 200) setReloadKey((k) => k + 1);
-    else alert(data.error || "Could not cancel this claim");
+    else alert(data.error || t("browseCancelFailed"));
   }
 
   // Distance from the saved location, computed on this device only.
   const withDist = useMemo(() => listings.map((l) => ({
     ...l,
     distanceKm: savedHasCoords && l.latitude != null && l.longitude != null
-      ? haversineKm(saved.lat, saved.lng, l.latitude, l.longitude)
+      ? haversineKm(saved, { lat: l.latitude, lng: l.longitude })
       : null,
   })), [listings, saved, savedHasCoords]);
 
@@ -107,50 +109,50 @@ export default function Browse() {
 
   return (
     <section className="browse-page">
-      <h1>Browse surplus food</h1>
+      <h1>{t("browseTitle")}</h1>
       <div className="controls">
-        <input className="control-input" type="search" placeholder="Search food…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="control-input" type="search" placeholder={t("browseSearchPlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="control-input" value={cat} onChange={(e) => setCat(e.target.value)}>
-          <option value="ALL">All categories</option>
+          <option value="ALL">{t("browseAllCategories")}</option>
           {Object.entries(CATEGORIES).map(([v, label]) => (
             <option key={v} value={v}>{label}</option>
           ))}
         </select>
         <select className="control-input" value={diet} onChange={(e) => setDiet(e.target.value)}>
-          <option value="ALL">Veg & non-veg</option>
-          <option value="VEG">Veg</option>
-          <option value="VEGAN">Vegan</option>
-          <option value="NON_VEG">Non-veg</option>
+          <option value="ALL">{t("browseVegNonVeg")}</option>
+          <option value="VEG">{t("browseVeg")}</option>
+          <option value="VEGAN">{t("browseVegan")}</option>
+          <option value="NON_VEG">{t("browseNonVeg")}</option>
         </select>
         <select className="control-input" value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="TIME_ASC">Time left: low to high</option>
-          <option value="TIME_DESC">Time left: high to low</option>
-          <option value="VEG_FIRST">Vegetarian first</option>
-          <option value="NONVEG_FIRST">Non-vegetarian first</option>
-          {savedHasCoords && <option value="DIST_ASC">Distance: nearest first</option>}
-          {savedHasCoords && <option value="DIST_DESC">Distance: farthest first</option>}
+          <option value="TIME_ASC">{t("browseSortTimeAsc")}</option>
+          <option value="TIME_DESC">{t("browseSortTimeDesc")}</option>
+          <option value="VEG_FIRST">{t("browseSortVegFirst")}</option>
+          <option value="NONVEG_FIRST">{t("browseSortNonvegFirst")}</option>
+          {savedHasCoords && <option value="DIST_ASC">{t("browseSortDistAsc")}</option>}
+          {savedHasCoords && <option value="DIST_DESC">{t("browseSortDistDesc")}</option>}
         </select>
         {savedHasCoords && (
           <select className="control-input" value={radius} onChange={(e) => setRadius(e.target.value)}>
-            <option value="ANY">Any distance</option>
-            <option value="2">Within 2 km</option>
-            <option value="5">Within 5 km</option>
-            <option value="10">Within 10 km</option>
+            <option value="ANY">{t("browseAnyDistance")}</option>
+            <option value="2">{t("browseWithin2Km")}</option>
+            <option value="5">{t("browseWithin5Km")}</option>
+            <option value="10">{t("browseWithin10Km")}</option>
           </select>
         )}
       </div>
 
       {saved && !savedHasCoords && (
-        <p className="hint">Your saved location is an area name without coordinates, so distances are off. Open the 📍 menu in the top bar and use "Use my location" to switch them on.</p>
+        <p className="hint">{t("browseAreaHint")}</p>
       )}
       {savedHasCoords && radius !== "ANY" && hiddenByRadius > 0 && (
-        <p className="hint">{hiddenByRadius} listing{hiddenByRadius === 1 ? "" : "s"} hidden by the distance filter — listings without a pickup point can't be distance-checked.</p>
+        <p className="hint">{hiddenByRadius} {t(hiddenByRadius === 1 ? "browseHiddenOne" : "browseHiddenMany")}</p>
       )}
 
-      {loading && <p>Loading listings…</p>}
+      {loading && <p>{t("browseLoading")}</p>}
       {!loading && error && <div className="form-error">{error}</div>}
-      {!loading && !error && listings.length === 0 && <p>No food listed yet — check back soon.</p>}
-      {!loading && !error && listings.length > 0 && shown.length === 0 && <p>No listings match your search or filters.</p>}
+      {!loading && !error && listings.length === 0 && <p>{t("browseEmpty")}</p>}
+      {!loading && !error && listings.length > 0 && shown.length === 0 && <p>{t("browseNoMatch")}</p>}
       <div className="cards-grid">
         {shown.map((l) => (
           <ListingCard key={l.id} listing={l} now={now} myClaim={claimByListing[l.id]} onCancelClaim={cancelClaim} distanceKm={l.distanceKm} />

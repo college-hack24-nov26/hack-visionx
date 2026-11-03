@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { API_BASE } from "../lib/api";
 import { CATEGORIES, DIETARY, portionsText, timeLeft } from "../lib/format";
 import { formatKm } from "../lib/location";
+import { useLanguage } from "../i18n/LanguageContext";
 
 // "3 meals" style text for any count, reusing portionsText's own unit words
 function countText(listing, n) {
@@ -10,17 +11,18 @@ function countText(listing, n) {
 }
 
 export default function ListingCard({ listing, now, myClaim, onCancelClaim, distanceKm }) {
+  const { t: tr } = useLanguage();
   const t = timeLeft(listing.deadline, now);
   const full = listing.status === "FULLY_CLAIMED";
   const badgeText = full
-    ? "Fully claimed"
+    ? tr("cardFullyClaimed")
     : t.level === "high"
-      ? "High urgency"
+      ? tr("cardUrgHigh")
       : t.level === "medium"
-        ? "Medium"
+        ? tr("cardUrgMedium")
         : t.level === "expired"
-          ? "Expired"
-          : "Low";
+          ? tr("cardUrgExpired")
+          : tr("cardUrgLow");
   return (
     <Link to={`/browse/${listing.id}`} className={`card${full ? " card-full" : ""}`}>
       {listing.photoUrl ? (
@@ -39,17 +41,17 @@ export default function ListingCard({ listing, now, myClaim, onCancelClaim, dist
         <p className="card-meta">{portionsText(listing)}</p>
         <p className="card-meta">📍 {listing.pickupLocation}</p>
         {distanceKm != null && (
-          <p className="card-meta"><span className="chip">📍 {formatKm(distanceKm)} away · straight-line</span></p>
+          <p className="card-meta"><span className="chip">📍 {formatKm(distanceKm)} {tr("cardAwayStraight")}</span></p>
         )}
         <p className="card-meta">
-          By {listing.provider?.orgName || listing.provider?.name || "Provider"} · ⏰ {t.label}
+          {tr("cardBy")} {listing.provider?.orgName || listing.provider?.name || "Provider"} · ⏰ {t.label}
         </p>
         {listing.providerVerified && (
-          <p className="card-meta"><span className="verified-chip">✓ Verified NGO</span></p>
+          <p className="card-meta"><span className="verified-chip">{tr("cardVerifiedNgo")}</span></p>
         )}
         {myClaim && (
           <div className="card-claim">
-            <span>✅ Your claim: {countText(listing, myClaim.portions)}</span>
+            <span>✅ {tr("cardYourClaim")} {countText(listing, myClaim.portions)}</span>
             <button
               type="button"
               className="btn btn-danger btn-small"
@@ -59,7 +61,7 @@ export default function ListingCard({ listing, now, myClaim, onCancelClaim, dist
                 onCancelClaim(myClaim, listing);
               }}
             >
-              Cancel
+              {tr("cardCancel")}
             </button>
           </div>
         )}
