@@ -9,6 +9,7 @@ import ListingDetail from './pages/ListingDetail';
 import MyListings from './pages/MyListings';
 import ListingForm from './pages/ListingForm';
 import MyClaims from './pages/MyClaims';
+import Admin from './pages/Admin';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -67,6 +68,7 @@ function App() {
             <Route path="/listings/new" element={<ListingForm />} />
             <Route path="/listings/:id/edit" element={<ListingForm />} />
             <Route path="/my-claims" element={<MyClaims />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </div>
       </AuthProvider>

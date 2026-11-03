@@ -43,6 +43,9 @@ export default function Nav() {
             {user.activeRole === 'PROVIDER' && (
               <Link to="/my-listings" className="nav-link">My Listings</Link>
             )}
+            {user.accountType === 'ADMIN' && (
+              <Link to="/admin" className="nav-link">Admin</Link>
+            )}
             <NotificationsBell />
             <span className="nav-user">{user.name}</span>
             {user.accountType !== 'USER' && (
