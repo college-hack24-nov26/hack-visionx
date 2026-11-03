@@ -74,6 +74,7 @@ model User {
   sessions     Session[]
   listings     Listing[]
   claims       Claim[]
+  notifications Notification[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -111,6 +112,7 @@ model Listing {
   contactPhone    String          @default("")
   showContact     Boolean         @default(false)
   safetyChecklist String[]        @default([])
+  deadlineAlertsSent String[]     @default([])
   status          ListingStatus   @default(DRAFT)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -146,4 +148,30 @@ model Claim {
   collectedAt       DateTime?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+}
+
+
+enum NotificationType {
+  LISTING_PUBLISHED
+  CLAIM_PLACED
+  CLAIMER_ON_THE_WAY
+  CLAIM_CANCELLED
+  LISTING_CANCELLED
+  NEAR_DEADLINE
+  CLAIM_COLLECTED
+  CLAIM_EXPIRED
+}
+
+// One row per in-app notification for one user (FR-NT1).
+model Notification {
+  id               String           @id @default(cuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type             NotificationType
+  title            String
+  body             String           @default("")
+  relatedListingId String?
+  relatedClaimId   String?
+  read             Boolean          @default(false)
+  createdAt        DateTime         @default(now())
 }

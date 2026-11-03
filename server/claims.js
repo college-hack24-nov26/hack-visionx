@@ -8,6 +8,8 @@ const express = require('express');
 const crypto = require('crypto');
 const prisma = require('./prisma');
 const { requireAuth, requireNotSuspended } = require('./auth');
+const { notify } = require('./notify');
+
 
 const router = express.Router();
 router.use(requireAuth, requireNotSuspended);
@@ -91,6 +93,14 @@ router.post('/', async (req, res) => {
         },
       });
     });
+
+    await notify({
+    userId: listing.providerId, type: 'CLAIM_PLACED',
+    title: `${u.name} claimed ${n} portions of ${listing.foodName}`,
+    body: 'Open your listing to see the claim.',
+    listingId: listing.id, claimId: claim.id,
+  });
+
     // The plaintext code is returned ONCE here; afterwards only the
     // owner-only re-view endpoint can show it again.
     res.status(201).json({ claim: publicClaim(claim), pickupCode: code });
@@ -168,6 +178,13 @@ router.post('/:id/cancel', async (req, res) => {
     }
     return c;
   });
+  await notify({
+  userId: claim.listing.providerId, type: 'CLAIM_CANCELLED',
+  title: `${req.user.name} cancelled a claim on ${claim.listing.foodName}`,
+  body: onTime ? 'The portions were returned to the listing.' : 'Cancelled inside 30 minutes of the deadline, so the portions were not returned.',
+  listingId: claim.listingId, claimId: claim.id,
+  });
+
   res.json({ claim: publicClaim(updated), portionsReturned: onTime });
 });
 
@@ -179,6 +196,14 @@ router.post('/:id/on-the-way', async (req, res) => {
   if (claim.status !== 'CONFIRMED') return res.status(409).json({ error: 'This claim is already closed' });
   if (claim.onWayAt) return res.status(409).json({ error: 'Already marked as on the way' });
   const updated = await prisma.claim.update({ where: { id: claim.id }, data: { onWayAt: new Date() } });
+  const listing = await prisma.listing.findUnique({ where: { id: claim.listingId }, select: { foodName: true, providerId: true } });
+await notify({
+  userId: listing.providerId, type: 'CLAIMER_ON_THE_WAY',
+  title: `${req.user.name} is on the way to collect ${listing.foodName}`,
+  body: 'The claimer has signalled they are coming for pickup.',
+  listingId: claim.listingId, claimId: claim.id,
+});
+
   res.json({ claim: publicClaim(updated) });
 });
 
@@ -212,6 +237,13 @@ router.post('/:id/verify', async (req, res) => {
     where: { id: claim.id },
     data: { status: 'COLLECTED', collectedAt: new Date(), codeEncrypted: null, verifyAttempts: 0, verifyLockedUntil: null },
   });
+  await notify({
+  userId: claim.claimerId, type: 'CLAIM_COLLECTED',
+  title: `Collected: ${claim.listing.foodName}`,
+  body: 'Your pickup was verified by the donor. Enjoy!',
+  listingId: claim.listingId, claimId: claim.id,
+});
+
   res.json({ claim: publicClaim(updated) });
 });
 

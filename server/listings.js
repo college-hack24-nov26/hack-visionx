@@ -7,6 +7,8 @@ const { requireAuth, requireNotSuspended } = require('./auth');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const { notify } = require('./notify');
+
 
 
 const router = express.Router();
@@ -127,6 +129,20 @@ router.patch('/:id', async (req, res) => {
     data.portionsRemaining = Math.max(0, data.portionCount - claimed);
   }
   const updated = await prisma.listing.update({ where: { id: listing.id }, data });
+  // FR-NT1: tell every claimer-role account about the new listing.
+  const recipients = await prisma.user.findMany({
+  where: { isSuspended: false, id: { not: req.user.id }, OR: [{ accountType: 'NGO' }, { accountType: 'USER', activeRole: 'CLAIMER' }] },
+  select: { id: true },
+ });
+  for (const r of recipients) {
+    await notify({
+    userId: r.id, type: 'LISTING_PUBLISHED',
+    title: `New food available: ${updated.foodName}`,
+    body: `${updated.portionCount} portions at ${updated.pickupLocation}`,
+    listingId: updated.id,
+  });
+}
+
   res.json({ listing: updated });
 });
 
@@ -171,12 +187,23 @@ router.post('/:id/cancel', async (req, res) => {
   }
   // Open claims on it are cancelled too — claims arrive in Slice 4.
   const updated = await prisma.listing.update({ where: { id: listing.id }, data: { status: 'CANCELLED' } });
+  const openClaims = await prisma.claim.findMany({ where: { listingId: listing.id, status: 'CONFIRMED' } });
   // FR-C8: open claims on a cancelled listing are cancelled by the provider.
   await prisma.claim.updateMany({
   where: { listingId: listing.id, status: 'CONFIRMED' },
   data: { status: 'CANCELLED_BY_PROVIDER', codeEncrypted: null },
 });
-  
+
+for (const c of openClaims) {
+  await notify({
+    userId: c.claimerId, type: 'LISTING_CANCELLED',
+    title: `Listing cancelled by the donor: ${listing.foodName}`,
+    body: 'This listing was cancelled, so your claim on it has been cancelled too.',
+    listingId: listing.id, claimId: c.id,
+  });
+}
+
+
   res.json({ listing: updated });
 });
 

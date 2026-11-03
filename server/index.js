@@ -29,6 +29,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/listings', require('./listings'));
 app.use('/api/browse', require('./browse'));
 app.use('/api/claims', require('./claims'));
+app.use('/api/notifications', require('./notifications'));
+require('./jobs').startJobs();
+
 
 
 
