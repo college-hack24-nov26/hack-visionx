@@ -279,3 +279,14 @@
 .lang-switch { display: inline-flex; gap: 4px; margin-left: 8px; }
 .lang-btn { border: 1px solid #1E9E6A; background: transparent; color: #20302A; border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 0.85rem; cursor: pointer; }
 .lang-btn.active { background: #1E9E6A; color: #fff; }
+
+
+
+/* Personal impact (FR-I2) */
+.my-impact { margin-bottom: 20px; }
+.my-impact-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.my-impact-card { background: var(--mint); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; }
+.my-impact-card strong { font-size: 22px; }
+.my-impact-card span { font-size: 13px; opacity: 0.75; }
+
+

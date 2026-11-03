@@ -29,6 +29,7 @@ export default function MyClaims() {
   const [codes, setCodes] = useState({});
   const [busyId, setBusyId] = useState("");
   const [actionError, setActionError] = useState({});
+  const [impact, setImpact] = useState(null);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -42,6 +43,16 @@ export default function MyClaims() {
     return () => { on = false; };
   }, [user, reloadKey]);
 
+  useEffect(() => {
+    if (!user) return;
+    let on = true;
+    api("/api/impact/me").then(({ status, data }) => {
+      if (!on) return;
+      if (status === 200) setImpact(data);
+    });
+    return () => { on = false; };
+  }, [user]);
+
   if (!user) {
     return (
       <section>
@@ -52,6 +63,28 @@ export default function MyClaims() {
   }
   if (loading) return <p>Loading…</p>;
   if (error) return <div className="form-error">{error}</div>;
+
+  function downloadCsv() {
+    if (!impact) return;
+    const rows = [
+      ["Metric", "Value"],
+      ["Portions collected", impact.claimer.portionsCollected],
+      ["Pickups completed", impact.claimer.pickupsCompleted],
+      ["Donors met", impact.claimer.donorsMet],
+      ["Portions shared (as donor)", impact.donor.portionsShared],
+      ["Pickups given", impact.donor.pickupsGiven],
+      ["Listings posted", impact.donor.listingsPosted],
+      ["Exported on", new Date().toISOString().slice(0, 10)],
+    ];
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "my-impact.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   async function showCode(claim) {
     setBusyId(claim.id);
@@ -78,7 +111,7 @@ export default function MyClaims() {
   async function cancel(claim) {
     const mins = Math.round((new Date(claim.listing.deadline) - Date.now()) / 60000);
     const msg = mins < 30
-      ? "Less than 30 minutes are left before the pickup deadline. If you cancel now, these portions will NOT go back for others to claim. Cancel anyway?"
+      ? "Less than 30 minutes are left before the pickup deadline. If you cancel now, these portions will NOT go back for others to claim.Cancel anyway?"
       : "Cancel this claim? The portions will go back for others to claim.";
     if (!window.confirm(msg)) return;
     setBusyId(claim.id);
@@ -92,6 +125,20 @@ export default function MyClaims() {
   return (
     <section>
       <h1>My Claims</h1>
+      {impact && (
+        <div className="my-impact">
+          <h2>Your impact</h2>
+          <div className="my-impact-cards">
+            <div className="my-impact-card"><strong>{impact.claimer.portionsCollected}</strong><span>Portions collected</span></div>
+            <div className="my-impact-card"><strong>{impact.claimer.pickupsCompleted}</strong><span>Pickups completed</span></div>
+            <div className="my-impact-card"><strong>{impact.donor.portionsShared}</strong><span>Portions shared</span></div>
+            <div className="my-impact-card"><strong>{impact.donor.pickupsGiven}</strong><span>Pickups given</span></div>
+          </div>
+          <p>
+            <button type="button" className="btn btn-ghost" onClick={downloadCsv}>Download CSV</button>
+          </p>
+        </div>
+      )}
       {claims.length === 0 && (
         <p>No claims yet. Find something tasty on the <Link to="/browse">browse page</Link>.</p>
       )}
