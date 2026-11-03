@@ -5,6 +5,7 @@ const prisma = require('./prisma');
 const authRoutes = require('./auth');
 const path = require('path');
 
+
 const app = express();
 
 app.use(cors());
@@ -31,6 +32,7 @@ app.use('/api/browse', require('./browse'));
 app.use('/api/claims', require('./claims'));
 app.use('/api/notifications', require('./notifications'));
 require('./jobs').startJobs();
+app.use('/api/admin', require('./admin'));
 
 
 
