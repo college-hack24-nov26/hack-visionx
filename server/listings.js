@@ -171,6 +171,12 @@ router.post('/:id/cancel', async (req, res) => {
   }
   // Open claims on it are cancelled too — claims arrive in Slice 4.
   const updated = await prisma.listing.update({ where: { id: listing.id }, data: { status: 'CANCELLED' } });
+  // FR-C8: open claims on a cancelled listing are cancelled by the provider.
+  await prisma.claim.updateMany({
+  where: { listingId: listing.id, status: 'CONFIRMED' },
+  data: { status: 'CANCELLED_BY_PROVIDER', codeEncrypted: null },
+});
+  
   res.json({ listing: updated });
 });
 

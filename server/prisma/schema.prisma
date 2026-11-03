@@ -73,6 +73,7 @@ model User {
   isMainAdmin  Boolean     @default(false)
   sessions     Session[]
   listings     Listing[]
+  claims       Claim[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -94,6 +95,7 @@ model Listing {
   id              String          @id @default(cuid())
   providerId      String
   provider        User            @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  claims          Claim[]
   foodName        String          @default("")
   details         String          @default("")
   category        ListingCategory?
@@ -112,4 +114,36 @@ model Listing {
   status          ListingStatus   @default(DRAFT)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+}
+
+
+enum ClaimStatus {
+  CONFIRMED
+  COLLECTED
+  CANCELLED
+  CANCELLED_LATE
+  CANCELLED_BY_PROVIDER
+  EXPIRED
+}
+
+// One row per claim of portions from a listing. The pickup code is
+// stored only as a salted hash plus an encrypted re-view copy that
+// is erased when the claim reaches a terminal state (FR-C3).
+model Claim {
+  id                String      @id @default(cuid())
+  listingId         String
+  listing           Listing     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  claimerId         String
+  claimer           User        @relation(fields: [claimerId], references: [id], onDelete: Cascade)
+  portions          Int
+  status            ClaimStatus @default(CONFIRMED)
+  codeHash          String
+  codeSalt          String
+  codeEncrypted     String?
+  verifyAttempts    Int         @default(0)
+  verifyLockedUntil DateTime?
+  onWayAt           DateTime?
+  collectedAt       DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 }
