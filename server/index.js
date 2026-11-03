@@ -36,6 +36,7 @@ require('./jobs').startJobs();
 app.use('/api/admin', require('./admin'));
 app.use('/api/ngo', require('./ngo'));
 app.use('/api/impact', require('./impact'));
+app.use('/api/invites', require('./invites'));
 
 
 

@@ -134,9 +134,15 @@ router.post('/register', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    let invitedById = null;
+    const inviteCode = (body.inviteCode || '').trim();
+    if (inviteCode) {
+      const inviter = await prisma.user.findUnique({ where: { id: inviteCode }, select: { id: true } });
+      if (inviter) invitedById = inviter.id;
+    }
     const user = await prisma.user.create({
       data: {
-        name, email, mobile, passwordHash,
+        name, email, mobile, passwordHash, invitedById,
         accountType: type,
         activeRole: type === 'NGO' ? 'NGO' : 'CLAIMER',
         orgName: type === 'NGO' ? body.orgName.trim() : null,
