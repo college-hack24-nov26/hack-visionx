@@ -63,10 +63,13 @@ async function request(path, options, retried) {
   const { body, headers, ...rest } = options;
   const finalHeaders = { ...(headers || {}) };
   let finalBody = body;
-  if (body !== undefined && body !== null && typeof body === 'object') {
-    finalHeaders['Content-Type'] = 'application/json';
-    finalBody = JSON.stringify(body);
-  }
+if (typeof body === 'string') {
+  finalHeaders['Content-Type'] = 'application/json';
+} else if (body !== undefined && body !== null && typeof body === 'object' && !(body instanceof FormData)) {
+  finalHeaders['Content-Type'] = 'application/json';
+  finalBody = JSON.stringify(body);
+}
+
   const access = getAccessToken();
   if (access) finalHeaders.Authorization = `Bearer ${access}`;
 
