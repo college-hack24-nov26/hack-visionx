@@ -81,6 +81,8 @@ ngoDocName            String?
 ngoSubmittedAt        DateTime?
 ngoReviewNote         String?
 preferredLanguage     String    @default("en")
+redistributions       RedistributionLog[]
+
 
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -201,4 +203,16 @@ model AuditLog {
   targetId   String?
   detail     String?
   createdAt  DateTime @default(now())
+}
+
+
+model RedistributionLog {
+  id           String   @id @default(cuid())
+  ngoId        String
+  ngo          User     @relation(fields: [ngoId], references: [id])
+  claimId      String?
+  portions     Int
+  peopleServed Int
+  note         String?
+  createdAt    DateTime @default(now())
 }
