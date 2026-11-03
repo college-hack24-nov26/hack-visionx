@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { LanguageProvider } from './i18n/LanguageContext';
+import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import Nav from './components/Nav';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -19,6 +19,7 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 function Home() {
+  const { t } = useLanguage();
   const [health, setHealth] = useState(null);
   const [failed, setFailed] = useState(false);
   const [impact, setImpact] = useState(null);
@@ -39,43 +40,40 @@ function Home() {
 
   const stats = impact
     ? [
-        { label: 'Portions rescued', value: impact.portionsRescued },
-        { label: 'Pickups completed', value: impact.pickupsCompleted },
-        { label: 'Listings shared', value: impact.listingsShared },
-        { label: 'Donors', value: impact.donors },
-        { label: 'People helped', value: impact.peopleHelped },
-        { label: 'Live now', value: impact.liveNow },
+        { label: t('homeStatPortionsRescued'), value: impact.portionsRescued },
+        { label: t('homeStatPickupsCompleted'), value: impact.pickupsCompleted },
+        { label: t('homeStatListingsShared'), value: impact.listingsShared },
+        { label: t('homeStatDonors'), value: impact.donors },
+        { label: t('homeStatPeopleHelped'), value: impact.peopleHelped },
+        { label: t('homeStatLiveNow'), value: impact.liveNow },
       ]
     : [];
 
   return (
     <main>
       <section className="hero">
-        <h1>Good food should never go to waste.</h1>
-        <p>
-          Food Waste Saver connects homes, hotels and events that have extra food
-          with nearby people and NGOs who can use it - before it expires.
-        </p>
+        <h1>{t('homeHeroTitle')}</h1>
+        <p>{t('homeHeroSub')}</p>
         <div className="hero-actions">
-          <Link className="btn" to="/listings/new">Post surplus food</Link>
-          <Link className="btn btn-ghost" to="/browse">Browse food</Link>
+          <Link className="btn" to="/listings/new">{t('navPostFood')}</Link>
+          <Link className="btn btn-ghost" to="/browse">{t('homeBrowseBtn')}</Link>
         </div>
       </section>
 
       <section className="card">
-        <h2>How it works</h2>
+        <h2>{t('homeHowItWorks')}</h2>
         <ol className="steps">
-          <li><strong>Post it</strong> - A donor adds the food, portions, pickup place and a deadline within 24 hours.</li>
-          <li><strong>Claim it</strong> - A nearby person or NGO claims the portions they can collect and gets a secret pickup code.</li>
-          <li><strong>Pick it up</strong> - The donor checks the code, the food is collected, and nothing goes to waste.</li>
+          <li><strong>{t('homeStep1Title')}</strong> - {t('homeStep1Text')}</li>
+          <li><strong>{t('homeStep2Title')}</strong> - {t('homeStep2Text')}</li>
+          <li><strong>{t('homeStep3Title')}</strong> - {t('homeStep3Text')}</li>
         </ol>
-        <p>Every donor must tick a food-safety checklist before posting, and every listing shows its deadline clearly.</p>
+        <p>{t('homeSafetyLine')}</p>
       </section>
 
       {impact && (
         <section className="card">
-          <h2>Impact Wall</h2>
-          <p>Every collected portion is counted on our Impact Wall, so the whole community can see how much food was saved together.</p>
+          <h2>{t('homeImpactWall')}</h2>
+          <p>{t('homeImpactLine')}</p>
           <div className="impact-grid">
             {stats.map((s) => (
               <div key={s.label} className="stat-card">
