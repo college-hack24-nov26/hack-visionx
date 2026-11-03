@@ -84,6 +84,9 @@ preferredLanguage     String    @default("en")
 profilePhotoUrl       String?
 invitedById           String?
 redistributions       RedistributionLog[]
+reviewsGiven    Review[] @relation("ReviewAuthor")
+reviewsReceived Review[] @relation("ReviewTarget")
+
 
 
   createdAt    DateTime    @default(now())
@@ -209,12 +212,28 @@ model AuditLog {
 
 
 model RedistributionLog {
-  id           String   @id @default(cuid())
-  ngoId        String
-  ngo          User     @relation(fields: [ngoId], references: [id])
-  claimId      String?
-  portions     Int
-  peopleServed Int
-  note         String?
-  createdAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  ngoId           String
+  ngo             User     @relation(fields: [ngoId], references: [id])
+  claimId         String?
+  portions        Int
+  peopleServed    Int
+  note            String?
+  destinationKind String?
+  createdAt       DateTime @default(now())
+}
+
+
+model Review {
+  id         String   @id @default(cuid())
+  claimId    String
+  reviewerId String
+  revieweeId String
+  stars      Int
+  text       String?
+  createdAt  DateTime @default(now())
+  reviewer   User     @relation("ReviewAuthor", fields: [reviewerId], references: [id])
+  reviewee   User     @relation("ReviewTarget", fields: [revieweeId], references: [id])
+
+  @@unique([claimId, reviewerId])
 }
