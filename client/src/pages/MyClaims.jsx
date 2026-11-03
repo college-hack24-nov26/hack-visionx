@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { portionsText } from "../lib/format";
+import PickupMap from "../components/PickupMap";
 
 const STATUS_LABELS = {
   CONFIRMED: "Confirmed",
@@ -42,6 +43,17 @@ export default function MyClaims() {
     });
     return () => { on = false; };
   }, [user, reloadKey]);
+
+  // Silent refresh every 15 s so a donor's live location stays current.
+  useEffect(() => {
+    if (!user) return;
+    const t = setInterval(() => {
+      api("/api/claims/mine").then(({ status, data }) => {
+        if (status === 200) setClaims(data.claims || []);
+      });
+    }, 15000);
+    return () => clearInterval(t);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -111,7 +123,7 @@ export default function MyClaims() {
   async function cancel(claim) {
     const mins = Math.round((new Date(claim.listing.deadline) - Date.now()) / 60000);
     const msg = mins < 30
-      ? "Less than 30 minutes are left before the pickup deadline. If you cancel now, these portions will NOT go back for others to claim.Cancel anyway?"
+      ? "Less than 30 minutes are left before the pickup deadline. If you cancel now, these portions will NOT go back for others to claim. Cancel anyway?"
       : "Cancel this claim? The portions will go back for others to claim.";
     if (!window.confirm(msg)) return;
     setBusyId(claim.id);
@@ -201,6 +213,7 @@ export default function MyClaims() {
                         </button>
                       </div>
                     )}
+                    <PickupMap claim={claim} />
                   </>
                 )}
               </div>

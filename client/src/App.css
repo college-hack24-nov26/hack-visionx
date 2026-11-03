@@ -312,3 +312,15 @@
 /* Invite banner (FR-A7) */
 .invite-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--mint); color: var(--ink); border-radius: 999px; padding: 8px 16px; margin: 12px 0 0; font-weight: 600; }
 .invite-banner-close { background: none; border: none; font-size: 18px; line-height: 1; cursor: pointer; color: inherit; }
+
+
+
+/* Pickup map (FR-M) */
+.pickup-map { height: 260px; border-radius: 16px; margin: 8px 0; z-index: 0; }
+.pickup-map-box { margin-top: 10px; }
+.map-dot-wrap { background: transparent; border: none; }
+.map-dot { display: block; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
+.dot-you { background: #2f6fed; }
+.dot-live { background: #1E9E6A; }
+.dot-static { background: #8a9a90; }
+.chip-active { background: var(--primary); color: #fff; }
