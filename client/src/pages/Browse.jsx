@@ -74,6 +74,10 @@ export default function Browse() {
     else alert(data.error || t("browseCancelFailed"));
   }
 
+  // FR-B4: signed-in claimers and NGOs with saved coordinates always get
+  // the hard 5 km radius - no "show everything" bypass.
+  const hardRadius = claimerRole && savedHasCoords;
+
   // Distance from the saved location, computed on this device only.
   const withDist = useMemo(() => listings.map((l) => ({
     ...l,
@@ -84,7 +88,7 @@ export default function Browse() {
 
   const { shown, hiddenByRadius } = useMemo(() => {
     let hidden = 0;
-    const radiusKm = savedHasCoords && radius !== "ANY" ? Number(radius) : null;
+    const radiusKm = hardRadius ? 5 : (savedHasCoords && radius !== "ANY" ? Number(radius) : null);
     const out = withDist.filter((l) => {
       const hay = `${l.foodName} ${l.details || ""}`.toLowerCase();
       if (q && !hay.includes(q.trim().toLowerCase())) return false;
@@ -105,7 +109,7 @@ export default function Browse() {
     else if (sort === "DIST_DESC")
       out.sort((a, b) => (b.distanceKm == null ? -Infinity : b.distanceKm) - (a.distanceKm == null ? -Infinity : a.distanceKm) || byTime(a, b));
     return { shown: out, hiddenByRadius: hidden };
-  }, [withDist, q, cat, diet, sort, radius, savedHasCoords]);
+  }, [withDist, q, cat, diet, sort, radius, savedHasCoords, hardRadius]);
 
   return (
     <section className="browse-page">
@@ -132,7 +136,7 @@ export default function Browse() {
           {savedHasCoords && <option value="DIST_ASC">{t("browseSortDistAsc")}</option>}
           {savedHasCoords && <option value="DIST_DESC">{t("browseSortDistDesc")}</option>}
         </select>
-        {savedHasCoords && (
+        {savedHasCoords && !hardRadius && (
           <select className="control-input" value={radius} onChange={(e) => setRadius(e.target.value)}>
             <option value="ANY">{t("browseAnyDistance")}</option>
             <option value="2">{t("browseWithin2Km")}</option>
@@ -145,7 +149,10 @@ export default function Browse() {
       {saved && !savedHasCoords && (
         <p className="hint">{t("browseAreaHint")}</p>
       )}
-      {savedHasCoords && radius !== "ANY" && hiddenByRadius > 0 && (
+      {hardRadius && (
+        <p className="hint">{t("browseHardRadius")}{hiddenByRadius > 0 && <> - {hiddenByRadius} {t(hiddenByRadius === 1 ? "browseHiddenOne" : "browseHiddenMany")}</>}</p>
+      )}
+      {!hardRadius && savedHasCoords && radius !== "ANY" && hiddenByRadius > 0 && (
         <p className="hint">{hiddenByRadius} {t(hiddenByRadius === 1 ? "browseHiddenOne" : "browseHiddenMany")}</p>
       )}
 
