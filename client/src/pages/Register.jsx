@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function Register() {
   const { register } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [accountType, setAccountType] = useState('USER');
   const [form, setForm] = useState({
@@ -40,7 +42,7 @@ export default function Register() {
     if (result.ok) { sessionStorage.removeItem('fws_invite'); navigate('/'); }
     else if (result.duplicate) setMessage(result.message);
     else if (result.errors) setErrors(result.errors);
-    else setError(result.error || 'Registration failed');
+    else setError(result.error || t('authRegisterFailed'));
   }
 
   function field(name, label, props = {}) {
@@ -57,13 +59,13 @@ export default function Register() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <h1>Register</h1>
-        <p className="auth-sub">Create your Food Waste Saver account.</p>
+        <h1>{t('navRegister')}</h1>
+        <p className="auth-sub">{t('authRegisterSub')}</p>
 
         <div className="toggle-row">
           <div className="role-toggle" aria-label="Account type">
             <button type="button" className={accountType === 'USER' ? 'role-btn active' : 'role-btn'}
-              onClick={() => setAccountType('USER')}>User</button>
+              onClick={() => setAccountType('USER')}>{t('authUser')}</button>
             <button type="button" className={accountType === 'NGO' ? 'role-btn active' : 'role-btn'}
               onClick={() => setAccountType('NGO')}>NGO</button>
           </div>
@@ -72,28 +74,28 @@ export default function Register() {
         {message && (
           <div className="notice">
             <p>{message}</p>
-            <p>Try <Link to="/login">logging in</Link> instead.</p>
+            <p><Link to="/login">{t('authTryLoggingIn')}</Link></p>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          {field('name', 'Name', { type: 'text', autoComplete: 'name', required: true })}
-          {field('email', 'Email', { type: 'email', autoComplete: 'email', required: true })}
-          {field('mobile', 'Mobile', { type: 'tel', autoComplete: 'tel', required: true })}
-          {field('password', 'Password', { type: 'password', autoComplete: 'new-password', required: true })}
+          {field('name', t('authName'), { type: 'text', autoComplete: 'name', required: true })}
+          {field('email', t('authEmail'), { type: 'email', autoComplete: 'email', required: true })}
+          {field('mobile', t('authMobileShort'), { type: 'tel', autoComplete: 'tel', required: true })}
+          {field('password', t('authPassword'), { type: 'password', autoComplete: 'new-password', required: true })}
           {accountType === 'NGO' && (
             <>
-              {field('orgName', 'Organisation name', { type: 'text', autoComplete: 'organization', required: true })}
-              {field('orgRegNo', 'Registration number', { type: 'text' })}
-              {field('orgAddress', 'Organisation address', { type: 'text' })}
+              {field('orgName', t('authOrgName'), { type: 'text', autoComplete: 'organization', required: true })}
+              {field('orgRegNo', t('authOrgRegNo'), { type: 'text' })}
+              {field('orgAddress', t('authOrgAddress'), { type: 'text' })}
             </>
           )}
           {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? 'Registering...' : 'Register'}
+            {submitting ? t('authRegistering') : t('navRegister')}
           </button>
         </form>
-        <p className="auth-alt">Already have an account? <Link to="/login">Login</Link></p>
+        <p className="auth-alt">{t('authHaveAccount')} <Link to="/login">{t('navLogin')}</Link></p>
       </section>
     </main>
   );
