@@ -30,7 +30,7 @@ async function softAuth(req, res, next) {
   next();
 }
 
-const providerSelect = { select: { name: true, accountType: true, orgName: true, ngoVerificationStatus: true }};
+const providerSelect = { select: { name: true, accountType: true, orgName: true, ngoVerificationStatus: true, id: true }};
 
 const cardFields = {
   id: true, foodName: true, category: true, categoryNote: true, dietaryType: true,
