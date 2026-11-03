@@ -4,6 +4,7 @@ import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { portionsText, timeLeft } from "../lib/format";
 import LiveShareControl from "../components/LiveShareControl";
+import ReviewForm from "../components/ReviewForm";
 
 const STATUS_LABELS = {
   DRAFT: "Draft",
@@ -43,6 +44,7 @@ export default function MyListings() {
   const [codes, setCodes] = useState({});
   const [verifyMsg, setVerifyMsg] = useState({});
   const [busyId, setBusyId] = useState("");
+  const [reviewedIds, setReviewedIds] = useState([]);
 
   const load = useCallback(() => {
     api("/api/listings/mine").then(({ status, data }) => {
@@ -62,6 +64,14 @@ export default function MyListings() {
     if (user && user.activeRole === "PROVIDER") { load(); loadReceived(); }
     else setLoading(false);
   }, [user, load, loadReceived]);
+
+  useEffect(() => {
+    if (user && user.activeRole === "PROVIDER") {
+      api("/api/reviews/mine").then(({ status, data }) => {
+        if (status === 200) setReviewedIds((data.reviews || []).map((r) => r.claimId));
+      });
+    }
+  }, [user]);
 
   const claimsByListing = useMemo(() => {
     const map = {};
@@ -180,6 +190,11 @@ export default function MyListings() {
                     {claim.status === "CONFIRMED" && (
                       <div style={{ flexBasis: "100%" }}>
                         <LiveShareControl claim={claim} />
+                      </div>
+                    )}
+                    {claim.status === "COLLECTED" && !reviewedIds.includes(claim.id) && (
+                      <div style={{ flexBasis: "100%" }}>
+                        <ReviewForm claimId={claim.id} label="Rate this claimer" />
                       </div>
                     )}
                   </div>
