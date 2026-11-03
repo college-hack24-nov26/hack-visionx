@@ -81,6 +81,8 @@ ngoDocName            String?
 ngoSubmittedAt        DateTime?
 ngoReviewNote         String?
 preferredLanguage     String    @default("en")
+profilePhotoUrl       String?
+invitedById           String?
 redistributions       RedistributionLog[]
 
 
