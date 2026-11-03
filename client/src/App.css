@@ -230,3 +230,28 @@
   margin: 0;
   padding: 0 14px 12px;
 }
+
+/* P1: photo recognition */
+.recog-row {
+  margin-top: 8px;
+}
+.recog-line {
+  margin: 10px 0 0;
+  color: var(--ink);
+}
+.recog-alts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.recog-chip {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+.recog-chip:hover {
+  background: var(--primary);
+  color: #fff;
+}

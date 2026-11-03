@@ -19,6 +19,10 @@ function toLocalInput(iso) {
   return d.toISOString().slice(0, 16);
 }
 
+function sourceText(src) {
+  return src === "gap" ? "our trained model" : "recognition model";
+}
+
 const EMPTY = {
   foodName: "", details: "", category: "COOKED_MEALS", dietaryType: "VEG",
   portionType: "INDIVIDUAL_MEALS", portionCount: "10", bulkUnit: "",
@@ -38,6 +42,10 @@ export default function ListingForm() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [loadingListing, setLoadingListing] = useState(!!id);
+  const [recogFile, setRecogFile] = useState(null);
+  const [recogBusy, setRecogBusy] = useState(false);
+  const [suggestion, setSuggestion] = useState(null);
+  const [alternatives, setAlternatives] = useState([]);
 
   useEffect(() => {
     if (!id) return;
@@ -140,6 +148,46 @@ export default function ListingForm() {
     }
   }
 
+  function applySuggestion(s) {
+    if (s.foodName) set("foodName", s.foodName);
+    if (s.description) set("details", s.description);
+    if (s.category && Object.prototype.hasOwnProperty.call(CATEGORIES, s.category)) set("category", s.category);
+    if (s.dietaryType && Object.prototype.hasOwnProperty.call(DIETARY, s.dietaryType)) set("dietaryType", s.dietaryType);
+    setSuggestion(s);
+  }
+
+  function pickAlternative(a) {
+    set("foodName", a.foodName);
+    setSuggestion((prev) => ({ ...(prev || {}), foodName: a.foodName, confidence: a.confidence, source: a.source }));
+  }
+
+  async function handleRecognize() {
+    if (!recogFile) { setError("Choose a photo first, then tap Recognize."); return; }
+    if (recogFile.size > 5 * 1024 * 1024) { setError("Photo must be 5 MB or smaller."); return; }
+    setRecogBusy(true); setError(""); setNotice("");
+    const fd = new FormData();
+    fd.append("photo", recogFile);
+    try {
+      const res = await fetch(`${API_BASE}/api/listings/recognize`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Recognition failed");
+      if (data.suggestion) applySuggestion(data.suggestion);
+      setAlternatives(Array.isArray(data.alternatives) ? data.alternatives : []);
+    } catch (err) {
+      const msg = err.message && err.message !== "Failed to fetch"
+        ? err.message
+        : "Recognition is unavailable right now - you can still type the details.";
+      setError(msg);
+      setSuggestion(null);
+      setAlternatives([]);
+    }
+    setRecogBusy(false);
+  }
+
   if (authLoading || loadingListing) return <p>Loading…</p>;
   if (!user) return <p>Please <Link to="/login">log in</Link> to list food.</p>;
   if (user.activeRole !== "PROVIDER")
@@ -203,6 +251,34 @@ export default function ListingForm() {
           </div>
           {errors.safetyChecklist && <p className="field-error">{errors.safetyChecklist}</p>}
         </div>
+
+        {!id && (
+          <div className="field">
+            <label>Recognize food from a photo</label>
+            <input type="file" accept="image/*" onChange={(e) => setRecogFile(e.target.files?.[0] || null)} />
+            <div className="recog-row">
+              <button type="button" className="btn btn-ghost" disabled={recogBusy || !recogFile} onClick={handleRecognize}>
+                {recogBusy ? "Recognizing…" : "📷 Recognize food from photo"}
+              </button>
+            </div>
+            {suggestion && (
+              <p className="recog-line">
+                Looks like <strong>{suggestion.foodName}</strong> ({Math.round((suggestion.confidence || 0) * 100)}% sure · {sourceText(suggestion.source)})
+              </p>
+            )}
+            {alternatives.length > 0 && (
+              <div className="recog-alts">
+                <span className="hint">Or maybe:</span>
+                {alternatives.map((a) => (
+                  <button key={a.foodName} type="button" className="chip recog-chip" onClick={() => pickAlternative(a)}>
+                    {a.foodName} · {Math.round((a.confidence || 0) * 100)}%
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="hint">The suggestion fills the form — check it and change anything before publishing.</p>
+          </div>
+        )}
 
         <div className="field">
           <label>Photo</label>
