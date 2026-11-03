@@ -28,6 +28,8 @@ export default function Register() {
       name: form.name.trim(), email: form.email.trim(),
       mobile: form.mobile.trim(), password: form.password, accountType,
     };
+    const inviteCode = sessionStorage.getItem('fws_invite');
+    if (inviteCode) payload.inviteCode = inviteCode;
     if (accountType === 'NGO') {
       payload.orgName = form.orgName.trim();
       payload.orgRegNo = form.orgRegNo.trim();
@@ -35,7 +37,7 @@ export default function Register() {
     }
     const result = await register(payload);
     setSubmitting(false);
-    if (result.ok) navigate('/');
+    if (result.ok) { sessionStorage.removeItem('fws_invite'); navigate('/'); }
     else if (result.duplicate) setMessage(result.message);
     else if (result.errors) setErrors(result.errors);
     else setError(result.error || 'Registration failed');
