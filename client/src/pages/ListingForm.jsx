@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, API_BASE, getAccessToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useSavedLocation } from "../context/LocationContext";
+import { devicePosition, reverseLabel } from "../lib/location";
 import { CATEGORIES, DIETARY, SAFETY_IDS, SAFETY_LABELS } from "../lib/format";
 
 const PORTION_TYPES = {
@@ -33,6 +35,7 @@ export default function ListingForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { saved: savedLoc, hasCoords: savedHasCoords } = useSavedLocation();
   const [form, setForm] = useState(EMPTY);
   const [checks, setChecks] = useState([]);
   const [savedId, setSavedId] = useState(id || null);
@@ -46,6 +49,8 @@ export default function ListingForm() {
   const [recogBusy, setRecogBusy] = useState(false);
   const [suggestion, setSuggestion] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
+  const [point, setPoint] = useState(null);
+  const [pointBusy, setPointBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -63,6 +68,7 @@ export default function ListingForm() {
           });
           setChecks(Array.isArray(l.safetyChecklist) ? l.safetyChecklist : []);
           setPhotoUrl(l.photoUrl || "");
+          if (l.latitude != null && l.longitude != null) setPoint({ lat: l.latitude, lng: l.longitude });
         } else setError("This listing was not found in your listings.");
       }
       setLoadingListing(false);
@@ -79,6 +85,32 @@ export default function ListingForm() {
     setErrors((e) => ({ ...e, safetyChecklist: undefined }));
   }
 
+  // FR-LOC2: typing over the pickup text clears the point, so the
+  // text and the point can never disagree.
+  function onPickupText(v) {
+    set("pickupLocation", v);
+    if (point) setPoint(null);
+  }
+
+  function useSavedPoint() {
+    if (!savedLoc || !savedHasCoords) return;
+    setPoint({ lat: savedLoc.lat, lng: savedLoc.lng });
+    if (savedLoc.label) set("pickupLocation", savedLoc.label);
+  }
+
+  async function useCurrentPoint() {
+    setPointBusy(true); setError("");
+    try {
+      const pos = await devicePosition();
+      setPoint({ lat: pos.lat, lng: pos.lng });
+      const label = await reverseLabel(pos.lat, pos.lng);
+      if (label) set("pickupLocation", label);
+    } catch {
+      setError("Could not get your location - check the browser permission and try again.");
+    }
+    setPointBusy(false);
+  }
+
   function payload() {
     return {
       foodName: form.foodName, details: form.details, category: form.category,
@@ -88,6 +120,8 @@ export default function ListingForm() {
       showContact: form.showContact,
       deadline: form.deadline ? new Date(form.deadline).toISOString() : "",
       safetyChecklist: checks,
+      latitude: point ? point.lat : null,
+      longitude: point ? point.lng : null,
     };
   }
 
@@ -228,7 +262,29 @@ export default function ListingForm() {
         ))}
         {field("portionCount", "How many portions / quantity", <input type="number" min="1" value={form.portionCount} onChange={(e) => set("portionCount", e.target.value)} />)}
         {bulk && field("bulkUnit", "Unit (e.g. kg, litres, boxes)", <input value={form.bulkUnit} onChange={(e) => set("bulkUnit", e.target.value)} />)}
-        {field("pickupLocation", "Pickup location", <input value={form.pickupLocation} onChange={(e) => set("pickupLocation", e.target.value)} placeholder="Area / landmark" />)}
+        {field("pickupLocation", "Pickup location", <input value={form.pickupLocation} onChange={(e) => onPickupText(e.target.value)} placeholder="Area / landmark" />)}
+
+        <div className="field">
+          <label>Pickup point (for distances and the pickup map)</label>
+          {point ? (
+            <p className="recog-line">
+              📍 Point set: {point.lat.toFixed(5)}, {point.lng.toFixed(5)}{" "}
+              <button type="button" className="chip" onClick={() => setPoint(null)}>Remove</button>
+            </p>
+          ) : (
+            <p className="hint">No point set — claimers won't see a distance or a map for this listing.</p>
+          )}
+          <div className="recog-row">
+            {savedHasCoords && (
+              <button type="button" className="btn btn-ghost" onClick={useSavedPoint}>Use my saved location</button>
+            )}
+            <button type="button" className="btn btn-ghost" disabled={pointBusy} onClick={useCurrentPoint}>
+              {pointBusy ? "Locating…" : "Use current location"}
+            </button>
+          </div>
+          {errors.pickupPoint && <p className="field-error">{errors.pickupPoint}</p>}
+        </div>
+
         {field("contactPhone", "Contact phone", <input value={form.contactPhone} onChange={(e) => set("contactPhone", e.target.value)} placeholder="10-digit mobile" />)}
         <div className="field">
           <label className="check-row">
