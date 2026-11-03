@@ -11,6 +11,15 @@ export default function NgoPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [entries, setEntries] = useState(null);
+  const [totals, setTotals] = useState(null);
+  const [rPortions, setRPortions] = useState('');
+  const [rPeople, setRPeople] = useState('');
+  const [rNote, setRNote] = useState('');
+  const [rClaimId, setRClaimId] = useState('');
+  const [rBusy, setRBusy] = useState(false);
+  const [rError, setRError] = useState('');
+  const [rNotice, setRNotice] = useState('');
 
   const isNgo = Boolean(user) && user.accountType === 'NGO';
 
@@ -25,6 +34,21 @@ export default function NgoPanel() {
   useEffect(() => {
     if (isNgo) loadStatus();
   }, [isNgo, loadStatus]);
+
+  const loadRedistributions = useCallback(async () => {
+    const { status: code, data } = await api('/api/ngo/redistributions');
+    if (code === 200) {
+      setEntries(data.entries || []);
+      setTotals(data.totals || {
+        totalPortions: data.totalPortions || 0,
+        totalPeopleServed: data.totalPeopleServed || 0,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isNgo && status && status.status === 'VERIFIED') loadRedistributions();
+  }, [isNgo, status, loadRedistributions]);
 
   async function handleUpload() {
     if (!file) { setError('Choose a document file first.'); return; }
@@ -47,6 +71,26 @@ export default function NgoPanel() {
       setError(err.message || 'Upload failed');
     }
     setBusy(false);
+  }
+
+  async function handleLog() {
+    const portions = Number(rPortions);
+    const peopleServed = Number(rPeople);
+    if (!Number.isInteger(portions) || portions <= 0) { setRError('Portions must be a positive whole number.'); return; }
+    if (!Number.isInteger(peopleServed) || peopleServed <= 0) { setRError('People served must be a positive whole number.'); return; }
+    setRBusy(true); setRError(''); setRNotice('');
+    const body = { portions, peopleServed };
+    if (rNote.trim()) body.note = rNote.trim();
+    if (rClaimId.trim()) body.claimId = rClaimId.trim();
+    const { status: code, data } = await api('/api/ngo/redistributions', { method: 'POST', body });
+    if (code === 200 || code === 201) {
+      setRNotice('Redistribution logged. Thank you!');
+      setRPortions(''); setRPeople(''); setRNote(''); setRClaimId('');
+      loadRedistributions();
+    } else {
+      setRError((data && data.error) || 'Could not log the redistribution.');
+    }
+    setRBusy(false);
   }
 
   if (authLoading) {
@@ -119,6 +163,53 @@ export default function NgoPanel() {
                 {busy ? 'Uploading…' : 'Upload document'}
               </button>
             </div>
+          </div>
+        )}
+
+        {!loading && s === 'VERIFIED' && (
+          <div>
+            <h2>Redistribution log</h2>
+            <p>Log food your NGO has given out after collecting it, so the impact shows.</p>
+            {totals && (
+              <p><strong>{totals.totalPortions} portions redistributed · {totals.totalPeopleServed} people served</strong></p>
+            )}
+            {rError && <p className="bad">{rError}</p>}
+            {rNotice && <p className="ok">{rNotice}</p>}
+            <label>
+              Portions redistributed
+              <input type="number" min="1" step="1" value={rPortions} onChange={(e) => setRPortions(e.target.value)} />
+            </label>
+            <label>
+              People served
+              <input type="number" min="1" step="1" value={rPeople} onChange={(e) => setRPeople(e.target.value)} />
+            </label>
+            <label>
+              Note (optional)
+              <input type="text" value={rNote} onChange={(e) => setRNote(e.target.value)} placeholder="e.g. Given out at the community hall" />
+            </label>
+            <label>
+              Claim ID (optional)
+              <input type="text" value={rClaimId} onChange={(e) => setRClaimId(e.target.value)} />
+            </label>
+            <p>
+              <button type="button" className="btn btn-primary" disabled={rBusy} onClick={handleLog}>
+                {rBusy ? 'Logging…' : 'Log redistribution'}
+              </button>
+            </p>
+            {entries && entries.length > 0 && (
+              <div className="admin-list">
+                {entries.map((e) => (
+                  <div className="admin-row" key={e.id}>
+                    <div className="admin-row-main">
+                      <strong>{e.portions} portions · {e.peopleServed} people served</strong>
+                      <span className="admin-meta">{new Date(e.createdAt).toLocaleString()}</span>
+                      {e.note && <span className="admin-meta">{e.note}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {entries && entries.length === 0 && <p className="admin-meta">No redistribution logged yet.</p>}
           </div>
         )}
       </section>
