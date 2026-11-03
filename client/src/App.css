@@ -69,3 +69,37 @@
 
 .ok strong { color: var(--primary); }
 .bad { color: #b3261e; font-weight: 700; }
+/* Slice 1: nav + auth pages */
+.nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.nav-brand { color: var(--primary); text-decoration: none; font-weight: 800; font-size: 1.25rem; }
+.nav-links { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nav-link { color: var(--ink); text-decoration: none; font-weight: 600; }
+.nav-user { font-weight: 700; }
+.nav-error { color: #b3261e; width: 100%; margin: 4px 0 0; font-size: 0.9rem; }
+.btn { display: inline-flex; align-items: center; justify-content: center; padding: 9px 18px; border-radius: 999px; border: 1px solid transparent; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-ghost { background: transparent; color: var(--primary); border-color: var(--primary); }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+.chip { background: var(--mint); color: var(--ink); padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+.role-toggle { display: inline-flex; background: var(--mint); border-radius: 999px; padding: 3px; gap: 3px; }
+.role-btn { border: none; background: transparent; padding: 6px 14px; border-radius: 999px; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; }
+.role-btn.active { background: var(--primary); color: #fff; }
+.role-btn:disabled { opacity: 0.6; }
+.toggle-row { display: flex; margin-bottom: 16px; }
+.toggle-row .role-toggle { flex: 1; }
+.toggle-row .role-btn { flex: 1; }
+.auth-page { display: flex; justify-content: center; padding: 32px 16px; }
+.auth-card { background: #fff; border-radius: 22px; box-shadow: 0 8px 30px rgba(32, 48, 42, 0.08); padding: 28px; width: 100%; max-width: 440px; }
+.auth-card h1 { margin-top: 0; }
+.auth-sub { margin-top: 0; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 0.85rem; font-weight: 700; }
+.field input { padding: 11px 14px; border: 1px solid #d8e2dc; border-radius: 12px; font: inherit; background: #fff; color: var(--ink); }
+.field input:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+.field-error { color: #b3261e; font-size: 0.85rem; margin: 0; }
+.form-error { color: #b3261e; background: #fdecea; padding: 10px 14px; border-radius: 12px; }
+.notice { background: var(--mint); padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; }
+.notice p { margin: 4px 0; }
+.notice a, .auth-alt a { color: var(--primary); font-weight: 700; }
+.auth-alt { text-align: center; margin-bottom: 0; }
