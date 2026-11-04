@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, API_BASE, getAccessToken } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -40,12 +40,13 @@ export default function ListingForm() {
   const [checks, setChecks] = useState([]);
   const [savedId, setSavedId] = useState(id || null);
   const [photoUrl, setPhotoUrl] = useState("");
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
   const [errors, setErrors] = useState({});
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [loadingListing, setLoadingListing] = useState(!!id);
-  const [recogFile, setRecogFile] = useState(null);
   const [recogBusy, setRecogBusy] = useState(false);
   const [suggestion, setSuggestion] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
@@ -90,6 +91,8 @@ export default function ListingForm() {
 
   function onPickupText(v) {
     set("pickupLocation", v);
+    // Editing the address by hand drops the captured point: the point must
+    // always be a fresh capture of where the food is at posting time.
     if (point) setPoint(null);
   }
 
@@ -98,6 +101,7 @@ export default function ListingForm() {
     try {
       const pos = await devicePosition();
       setPoint({ lat: pos.lat, lng: pos.lng });
+      setErrors((e) => ({ ...e, pickupPoint: undefined }));
       const label = await reverseLabel(pos.lat, pos.lng);
       if (label) set("pickupLocation", label);
     } catch {
@@ -120,18 +124,45 @@ export default function ListingForm() {
     };
   }
 
+  async function uploadPhoto(listingId, file) {
+    const fd = new FormData();
+    fd.append("photo", file);
+    const res = await fetch(`${API_BASE}/api/listings/${listingId}/photo`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${getAccessToken()}` },
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Photo upload failed");
+    return (data.listing || data).photoUrl || "";
+  }
+
   async function saveDraft() {
     const body = payload();
-    if (savedId) {
-      const { status, data } = await api(`/api/listings/${savedId}`, { method: "PATCH", body });
+    let lid = savedId;
+    if (lid) {
+      const { status, data } = await api(`/api/listings/${lid}`, { method: "PATCH", body });
       if (status !== 200) { setError(data.error || "Could not save draft"); return null; }
-      return savedId;
+    } else {
+      const { status, data } = await api("/api/listings", { method: "POST", body });
+      if (status !== 201) { setError(data.error || "Could not save draft"); return null; }
+      lid = (data.listing || data).id;
+      setSavedId(lid);
     }
-    const { status, data } = await api("/api/listings", { method: "POST", body });
-    if (status !== 201) { setError(data.error || "Could not save draft"); return null; }
-    const newId = (data.listing || data).id;
-    setSavedId(newId);
-    return newId;
+    // A photo chosen at the top of the form is attached as soon as the
+    // listing exists - one photo does both recognition and the listing.
+    if (pendingPhoto) {
+      try {
+        const url = await uploadPhoto(lid, pendingPhoto);
+        if (url) setPhotoUrl(url);
+        setPendingPhoto(null);
+        setPhotoPreview("");
+      } catch (err) {
+        setError(err.message || "Photo upload failed");
+        return null;
+      }
+    }
+    return lid;
   }
 
   async function handleSaveDraft() {
@@ -145,6 +176,14 @@ export default function ListingForm() {
   }
 
   async function handlePublish() {
+    // Posting requires the donor's CURRENT location, captured in this
+    // session - a listing always starts from where the food is right now.
+    if (!point) {
+      setErrors((e) => ({ ...e, pickupPoint: "Tap 'Use current location' so the pickup point is where you are right now." }));
+      setError("Your current location is required before publishing - see the pickup location section.");
+      document.getElementById("pickup-point-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     setBusy(true); setError(""); setNotice(""); setErrors({});
     const lid = await saveDraft();
     if (!lid) { setBusy(false); return; }
@@ -155,22 +194,14 @@ export default function ListingForm() {
     setError(data.error || "Could not publish this listing");
   }
 
-  async function handlePhoto(e) {
+  async function handlePhotoEdit(e) {
     const file = e.target.files?.[0];
     if (!file || !savedId) return;
     if (file.size > 5 * 1024 * 1024) { setError("Photo must be 5 MB or smaller."); return; }
     setError("");
-    const fd = new FormData();
-    fd.append("photo", file);
     try {
-      const res = await fetch(`${API_BASE}/api/listings/${savedId}/photo`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${getAccessToken()}` },
-        body: fd,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Photo upload failed");
-      setPhotoUrl((data.listing || data).photoUrl || "");
+      const url = await uploadPhoto(savedId, file);
+      setPhotoUrl(url);
       setNotice("Photo uploaded.");
     } catch (err) {
       setError(err.message || "Photo upload failed");
@@ -220,6 +251,16 @@ export default function ListingForm() {
     if (recogSeq.current === mySeq) setRecogBusy(false);
   }
 
+  function onTopPhoto(e) {
+    const file = e.target.files?.[0] || null;
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setError("Photo must be 5 MB or smaller."); return; }
+    if (id) { handlePhotoEdit(e); return; }
+    setPendingPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    handleRecognize(file);
+  }
+
   if (authLoading || loadingListing) return <p>Loading...</p>;
   if (!user) return <p>Please <Link to="/login">log in</Link> to list food.</p>;
   if (user.activeRole !== "PROVIDER")
@@ -241,6 +282,35 @@ export default function ListingForm() {
         {error && <div className="form-error">{error}</div>}
         {notice && <div className="notice">{notice}</div>}
 
+        <div className="field">
+          <label>{id ? "Photo" : "Photo - we fill the form from it"}</label>
+          {(photoPreview || photoUrl) && (
+            <img className="form-photo" src={photoPreview || API_BASE + photoUrl} alt="" />
+          )}
+          <input type="file" accept="image/*" onChange={onTopPhoto} />
+          {!id && (
+            <>
+              {recogBusy && <p className="recog-line">Recognizing...</p>}
+              {suggestion && !recogBusy && (
+                <p className="recog-line">
+                  Looks like <strong>{suggestion.foodName}</strong> ({Math.round((suggestion.confidence || 0) * 100)}% sure - {sourceText(suggestion.source)})
+                </p>
+              )}
+              {alternatives.length > 0 && !recogBusy && (
+                <div className="recog-alts">
+                  <span className="hint">Or maybe:</span>
+                  {alternatives.map((a) => (
+                    <button key={a.foodName} type="button" className="chip recog-chip" onClick={() => pickAlternative(a)}>
+                      {a.foodName} - {Math.round((a.confidence || 0) * 100)}%
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="hint">Recognition fills only the fields you have left empty - anything you typed stays yours. The same photo becomes the listing's photo when you save.</p>
+            </>
+          )}
+        </div>
+
         {field("foodName", "Food name", <input value={form.foodName} onChange={(e) => set("foodName", e.target.value)} placeholder="e.g. Veg Biryani" />)}
         {field("details", "Details", <textarea rows={3} value={form.details} onChange={(e) => set("details", e.target.value)} placeholder="What is it, when was it made, any notes" />)}
         {field("category", "Category", (
@@ -260,24 +330,25 @@ export default function ListingForm() {
         ))}
         {field("portionCount", "How many portions / quantity", <input type="number" min="1" value={form.portionCount} onChange={(e) => set("portionCount", e.target.value)} />)}
         {bulk && field("bulkUnit", "Unit (e.g. kg, litres, boxes)", <input value={form.bulkUnit} onChange={(e) => set("bulkUnit", e.target.value)} />)}
-        {field("pickupLocation", "Pickup location", <input value={form.pickupLocation} onChange={(e) => onPickupText(e.target.value)} placeholder="Area / landmark" />)}
 
-        <div className="field">
-          <label>Pickup point (for distances and the pickup map)</label>
-          {point ? (
-            <p className="recog-line">
-              Point set: {point.lat.toFixed(5)}, {point.lng.toFixed(5)}{" "}
-              <button type="button" className="chip" onClick={() => setPoint(null)}>Remove</button>
-            </p>
-          ) : (
-            <p className="hint">No point set - claimers won't see a distance or a map for this listing.</p>
-          )}
+        <div className="field" id="pickup-point-section">
+          <label>Pickup location</label>
+          <input value={form.pickupLocation} onChange={(e) => onPickupText(e.target.value)} placeholder="Area / landmark" />
+          {errors.pickupLocation && <p className="field-error">{errors.pickupLocation}</p>}
           <div className="recog-row">
             <button type="button" className="btn btn-ghost" disabled={pointBusy} onClick={useCurrentPoint}>
               {pointBusy ? "Locating..." : "Use current location"}
             </button>
+            {point && <span className="verify-ok">Pickup point set: {point.lat.toFixed(5)}, {point.lng.toFixed(5)}</span>}
           </div>
-          <p className="hint">The point comes only from this device's current location, so it always matches where the food really is.</p>
+          {point ? (
+            <p className="hint">
+              This point is your location right now, captured on this device - it powers the distance shown to claimers and their pickup map.{" "}
+              <button type="button" className="chip" onClick={() => setPoint(null)}>Remove</button>
+            </p>
+          ) : (
+            <p className="hint">Publishing requires your current location: tap the button where the food is, at the time of posting. Typing an address by hand is not enough - and editing the address afterwards clears the point, so tap again.</p>
+          )}
           {errors.pickupPoint && <p className="field-error">{errors.pickupPoint}</p>}
         </div>
 
@@ -306,48 +377,6 @@ export default function ListingForm() {
 
         <div className="notice">
           <strong>Terms, in plain words:</strong> the food you share is your responsibility. The declarations above are your promise that it was prepared and stored safely. If a claimer falls ill - including food poisoning - after eating food you provided, the responsibility is yours. Please share only food you would serve your own family.
-        </div>
-
-        {!id && (
-          <div className="field">
-            <label>Recognize food from a photo</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const f = e.target.files?.[0] || null;
-                setRecogFile(f);
-                if (f) handleRecognize(f);
-              }}
-            />
-            {recogBusy && <p className="recog-line">Recognizing...</p>}
-            {suggestion && !recogBusy && (
-              <p className="recog-line">
-                Looks like <strong>{suggestion.foodName}</strong> ({Math.round((suggestion.confidence || 0) * 100)}% sure - {sourceText(suggestion.source)})
-              </p>
-            )}
-            {alternatives.length > 0 && !recogBusy && (
-              <div className="recog-alts">
-                <span className="hint">Or maybe:</span>
-                {alternatives.map((a) => (
-                  <button key={a.foodName} type="button" className="chip recog-chip" onClick={() => pickAlternative(a)}>
-                    {a.foodName} - {Math.round((a.confidence || 0) * 100)}%
-                  </button>
-                ))}
-              </div>
-            )}
-            <p className="hint">Recognition fills only the fields you have left empty - anything you typed stays yours.</p>
-          </div>
-        )}
-
-        <div className="field">
-          <label>Photo</label>
-          {photoUrl && <img className="form-photo" src={API_BASE + photoUrl} alt="" />}
-          {savedId ? (
-            <input type="file" accept="image/*" onChange={handlePhoto} />
-          ) : (
-            <p className="hint">Save the draft first, then you can add a photo (max 5 MB).</p>
-          )}
         </div>
 
         <div className="form-actions">
