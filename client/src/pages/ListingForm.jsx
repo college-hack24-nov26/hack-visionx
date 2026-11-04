@@ -54,27 +54,45 @@ export default function ListingForm() {
   const [point, setPoint] = useState(null);
   const [pointBusy, setPointBusy] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [recogNote, setRecogNote] = useState("");
   const touched = useRef(new Set());
   const recogSeq = useRef(0);
 
+  function applyLoadedListing(l) {
+    setForm({
+      foodName: l.foodName || "", details: l.details || "",
+      category: l.category || "COOKED_MEALS", dietaryType: l.dietaryType || "VEG",
+      portionType: l.portionType || "INDIVIDUAL_MEALS",
+      portionCount: String(l.portionCount ?? ""), bulkUnit: l.bulkUnit || "",
+      pickupLocation: l.pickupLocation || "", contactPhone: l.contactPhone || "",
+      showContact: !!l.showContact, deadline: toLocalInput(l.deadline),
+    });
+    setChecks(Array.isArray(l.safetyChecklist) ? l.safetyChecklist : []);
+    setPhotoUrl(l.photoUrl || "");
+    if (l.latitude != null && l.longitude != null) setPoint({ lat: l.latitude, lng: l.longitude });
+  }
+
   useEffect(() => {
     if (!id) return;
-    api("/api/listings/mine").then(({ status, data }) => {
+    api("/api/listings/mine").then(async ({ status, data }) => {
       if (status === 200) {
         const l = (data.listings || []).find((x) => x.id === id);
         if (l) {
-          setForm({
-            foodName: l.foodName || "", details: l.details || "",
-            category: l.category || "COOKED_MEALS", dietaryType: l.dietaryType || "VEG",
-            portionType: l.portionType || "INDIVIDUAL_MEALS",
-            portionCount: String(l.portionCount ?? ""), bulkUnit: l.bulkUnit || "",
-            pickupLocation: l.pickupLocation || "", contactPhone: l.contactPhone || "",
-            showContact: !!l.showContact, deadline: toLocalInput(l.deadline),
-          });
-          setChecks(Array.isArray(l.safetyChecklist) ? l.safetyChecklist : []);
-          setPhotoUrl(l.photoUrl || "");
-          if (l.latitude != null && l.longitude != null) setPoint({ lat: l.latitude, lng: l.longitude });
-        } else setError("This listing was not found in your listings.");
+          applyLoadedListing(l);
+          setLoadingListing(false);
+          return;
+        }
+        // Admins can open and edit any listing, not only their own.
+        if (user && user.accountType === "ADMIN") {
+          const r = await api(`/api/listings/${id}`);
+          if (r.status === 200 && r.data.listing) {
+            applyLoadedListing(r.data.listing);
+            setLoadingListing(false);
+            return;
+          }
+        }
+        setError("This listing was not found in your listings.");
       }
       setLoadingListing(false);
     });
@@ -84,11 +102,6 @@ export default function ListingForm() {
     touched.current.add(field);
     setForm((f) => ({ ...f, [field]: value }));
     setErrors((e) => ({ ...e, [field]: undefined }));
-  }
-
-  function toggleCheck(cid) {
-    setChecks((c) => (c.includes(cid) ? c.filter((x) => x !== cid) : [...c, cid]));
-    setErrors((e) => ({ ...e, safetyChecklist: undefined }));
   }
 
   function onPickupText(v) {
@@ -241,7 +254,11 @@ export default function ListingForm() {
       const data = await res.json().catch(() => ({}));
       if (recogSeq.current !== mySeq) return;
       if (!res.ok) throw new Error(data.error || "Recognition failed");
-      if (data.suggestion) applySuggestion(data.suggestion);
+      if (data.suggestion) { applySuggestion(data.suggestion); setRecogNote(""); }
+      else {
+        setSuggestion(null);
+        setRecogNote("We couldn't recognize this photo confidently - it may not be a food photo. Please type the dish name below.");
+      }
       setAlternatives(Array.isArray(data.alternatives) ? data.alternatives : []);
     } catch (err) {
       if (recogSeq.current !== mySeq) return;
@@ -306,6 +323,7 @@ export default function ListingForm() {
                   Looks like <strong>{suggestion.foodName}</strong> ({Math.round((suggestion.confidence || 0) * 100)}% sure - {sourceText(suggestion.source)})
                 </p>
               )}
+              {recogNote && !recogBusy && <p className="recog-note">{recogNote}</p>}
               {alternatives.length > 0 && !recogBusy && (
                 <div className="recog-alts">
                   <span className="hint">Or maybe:</span>
@@ -373,21 +391,58 @@ export default function ListingForm() {
         <p className="hint">Deadline can be at most 24 hours from now.</p>
 
         <div className="field">
-          <label>Food safety declarations - all 8 are required to publish</label>
-          <div className="check-list">
-            {SAFETY_IDS.map((cid) => (
-              <label key={cid} className="check-row">
-                <input type="checkbox" checked={checks.includes(cid)} onChange={() => toggleCheck(cid)} />
-                {SAFETY_LABELS[cid]}
-              </label>
-            ))}
+          <label>Food safety & terms</label>
+          <div className="agree-row">
+            <input
+              type="checkbox"
+              checked={SAFETY_IDS.every((cid) => checks.includes(cid))}
+              onChange={(e) => {
+                setChecks(e.target.checked ? [...SAFETY_IDS] : []);
+                setErrors((er) => ({ ...er, safetyChecklist: undefined }));
+              }}
+            />
+            <span>I agree to the food-safety declarations and terms - the food I share is my responsibility.</span>
+          </div>
+          <div className="recog-row">
+            <button type="button" className="btn btn-ghost" onClick={() => setTermsOpen(true)}>
+              Read the declarations & terms
+            </button>
           </div>
           {errors.safetyChecklist && <p className="field-error">{errors.safetyChecklist}</p>}
         </div>
 
-        <div className="notice">
-          <strong>Terms, in plain words:</strong> the food you share is your responsibility. The declarations above are your promise that it was prepared and stored safely. If a claimer falls ill - including food poisoning - after eating food you provided, the responsibility is yours. Please share only food you would serve your own family.
-        </div>
+        {termsOpen && (
+          <div className="modal-overlay" role="dialog" aria-modal="true">
+            <div className="modal-card">
+              <h3>Food safety declarations</h3>
+              <p>By publishing, you declare all of the following:</p>
+              <ul className="terms-list">
+                {SAFETY_IDS.map((cid) => (
+                  <li key={cid}>{SAFETY_LABELS[cid]}</li>
+                ))}
+              </ul>
+              <p>
+                <strong>Terms, in plain words:</strong> the food you share is your responsibility. The declarations above are your promise that it was prepared and stored safely. If a claimer falls ill - including food poisoning - after eating food you provided, the responsibility is yours. Please share only food you would serve your own family.
+              </p>
+              <div className="camera-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setChecks([...SAFETY_IDS]);
+                    setErrors((er) => ({ ...er, safetyChecklist: undefined }));
+                    setTermsOpen(false);
+                  }}
+                >
+                  I agree
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setTermsOpen(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="form-actions">
           <button type="button" className="btn btn-ghost" disabled={busy} onClick={handleSaveDraft}>Save Draft</button>
