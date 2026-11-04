@@ -80,6 +80,21 @@ router.get('/status', (req, res) => {
   });
 });
 
+// Portions this NGO has actually collected, minus what it already logged
+// as redistributed - the ceiling for any new entry, so the log can never
+// claim more food than the NGO really picked up.
+async function redistributionBalance(ngoId) {
+  const collected = await prisma.claim.aggregate({
+    _sum: { portions: true },
+    where: { claimerId: ngoId, status: 'COLLECTED' },
+  });
+  const logged = await prisma.redistributionLog.aggregate({
+    _sum: { portions: true },
+    where: { ngoId },
+  });
+  return (collected._sum.portions || 0) - (logged._sum.portions || 0);
+}
+
 // Redistribution log: create an entry for the signed-in NGO.
 router.post('/redistributions', requireNgo, async (req, res) => {
   const portions = Number(req.body && req.body.portions);
@@ -99,6 +114,14 @@ router.post('/redistributions', requireNgo, async (req, res) => {
     ? req.body.destinationKind.trim() : null;
   if (destinationKind !== null && !DESTINATION_KINDS.includes(destinationKind)) {
     return res.status(400).json({ error: 'Destination kind is not valid' });
+  }
+  const available = await redistributionBalance(req.user.id);
+  if (portions > available) {
+    return res.status(400).json({
+      error: available <= 0
+        ? 'You have no collected portions waiting to be logged - collect a claim first.'
+        : `You can log at most ${available} portions - that is what you have collected and not yet redistributed.`,
+    });
   }
   try {
     const entry = await prisma.redistributionLog.create({
@@ -123,7 +146,9 @@ router.get('/redistributions', requireNgo, async (req, res) => {
     totalPortions += e.portions;
     totalPeopleServed += e.peopleServed;
   }
-  res.json({ entries, totals: { totalPortions, totalPeopleServed } });
+  const available = await redistributionBalance(req.user.id);
+  res.json({ entries, totals: { totalPortions, totalPeopleServed }, available });
 });
 
 module.exports = router;
+

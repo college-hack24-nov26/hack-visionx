@@ -19,6 +19,7 @@ export default function NgoPanel() {
   const [rClaimId, setRClaimId] = useState('');
   const [rKind, setRKind] = useState('Other');
   const [rBusy, setRBusy] = useState(false);
+  const [rAvailable, setRAvailable] = useState(null);
   const [rError, setRError] = useState('');
   const [rNotice, setRNotice] = useState('');
 
@@ -40,6 +41,7 @@ export default function NgoPanel() {
     const { status: code, data } = await api('/api/ngo/redistributions');
     if (code === 200) {
       setEntries(data.entries || []);
+      setRAvailable(typeof data.available === 'number' ? data.available : null);
       setTotals(data.totals || {
         totalPortions: data.totalPortions || 0,
         totalPeopleServed: data.totalPeopleServed || 0,
@@ -174,11 +176,14 @@ export default function NgoPanel() {
             {totals && (
               <p><strong>{totals.totalPortions} portions redistributed · {totals.totalPeopleServed} people served</strong></p>
             )}
+            {rAvailable !== null && (
+              <p className="admin-meta">You have <strong>{rAvailable}</strong> collected portions not yet logged - you can only log food you actually collected.</p>
+            )}
             {rError && <p className="bad">{rError}</p>}
             {rNotice && <p className="ok">{rNotice}</p>}
             <label>
               Portions redistributed
-              <input type="number" min="1" step="1" value={rPortions} onChange={(e) => setRPortions(e.target.value)} />
+              <input type="number" min="1" step="1" max={rAvailable ?? undefined} value={rPortions} onChange={(e) => setRPortions(e.target.value)} />
             </label>
             <label>
               People served
@@ -227,3 +232,4 @@ export default function NgoPanel() {
     </main>
   );
 }
+
