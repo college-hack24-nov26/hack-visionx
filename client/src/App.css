@@ -437,3 +437,13 @@ a.card:active { transform: scale(0.99); }
   .btn, .card { transition: none; }
   a.card:hover { transform: none; }
 }
+
+/* ---------- Layout safety: listing rows can never widen the page ---------- */
+.mine-list { width: 100%; }
+.mine-wrap { width: 100%; min-width: 0; }
+.mine-row { width: 100%; overflow: hidden; }
+.mine-main { overflow: hidden; }
+.received-box { overflow: hidden; }
+.received-row > span { min-width: 0; overflow-wrap: anywhere; }
+.claim-card { overflow: hidden; }
+.claim-body { overflow-wrap: anywhere; }
