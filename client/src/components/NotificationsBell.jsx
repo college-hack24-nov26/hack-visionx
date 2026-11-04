@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
@@ -22,6 +22,10 @@ export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
+  // Swipe-to-dismiss: live drag offset per item; -999 means "animating out".
+  const [swipe, setSwipe] = useState({});
+  const dragX = useRef({});
+  const swipedAt = useRef({});
 
   const load = useCallback(() => {
     api("/api/notifications").then(({ status, data }) => {
@@ -48,6 +52,8 @@ export default function NotificationsBell() {
   }
 
   async function openItem(n) {
+    // A tap that was really the end of a swipe should not open the item.
+    if (Date.now() - (swipedAt.current[n.id] || 0) < 350) return;
     if (!n.read) {
       await api(`/api/notifications/${n.id}/read`, { method: "POST" });
       setItems((list) => list.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
@@ -62,6 +68,30 @@ export default function NotificationsBell() {
     await api(`/api/notifications/${n.id}`, { method: "DELETE" });
     setItems((list) => list.filter((x) => x.id !== n.id));
     if (!n.read) setUnread((u) => Math.max(0, u - 1));
+  }
+
+  function swipeDown(e, n) {
+    dragX.current[n.id] = e.clientX;
+  }
+
+  function swipeMove(e, n) {
+    const start = dragX.current[n.id];
+    if (start == null) return;
+    const dx = e.clientX - start;
+    if (dx > 0) setSwipe((s) => ({ ...s, [n.id]: dx }));
+  }
+
+  function swipeUp(e, n) {
+    const dx = swipe[n.id] || 0;
+    delete dragX.current[n.id];
+    if (dx > 8) swipedAt.current[n.id] = Date.now();
+    if (dx > 72) {
+      // Past the threshold: slide it off, then dismiss for real.
+      setSwipe((s) => ({ ...s, [n.id]: -999 }));
+      setTimeout(() => dismiss(e, n), 240);
+    } else if (dx !== 0) {
+      setSwipe((s) => ({ ...s, [n.id]: 0 }));
+    }
   }
 
   return (
@@ -85,8 +115,13 @@ export default function NotificationsBell() {
               {items.map((n) => (
                 <div
                   key={n.id}
-                  className={`bell-item${n.read ? "" : " bell-unread"}`}
+                  className={`bell-item${n.read ? "" : " bell-unread"}${swipe[n.id] === -999 ? " swipe-out" : ""}${swipe[n.id] > 0 ? " swiping" : ""}`}
+                  style={swipe[n.id] > 0 ? { transform: `translateX(${swipe[n.id]}px)` } : undefined}
                   onClick={() => openItem(n)}
+                  onPointerDown={(e) => swipeDown(e, n)}
+                  onPointerMove={(e) => swipeMove(e, n)}
+                  onPointerUp={(e) => swipeUp(e, n)}
+                  onPointerCancel={(e) => swipeUp(e, n)}
                 >
                   <span className="bell-icon">{TYPE_ICONS[n.type] || "🔔"}</span>
                   <div className="bell-text">
@@ -104,3 +139,4 @@ export default function NotificationsBell() {
     </div>
   );
 }
+
