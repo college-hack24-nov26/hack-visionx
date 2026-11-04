@@ -38,11 +38,6 @@ export default function Nav() {
     setSwitching(false);
   }
 
-  function cycleLang() {
-    const next = LANG_ORDER[(LANG_ORDER.indexOf(lang) + 1) % LANG_ORDER.length];
-    setLang(next);
-  }
-
   const isAdmin = !!user && user.accountType === 'ADMIN';
   const canClaim = !!user && !isAdmin && (user.accountType === 'NGO' || (user.accountType === 'USER' && user.activeRole === 'CLAIMER'));
 
@@ -50,13 +45,10 @@ export default function Nav() {
     <>
       <header className="nav">
         <div className="nav-top">
-          <Link to="/" className="nav-brand">Food Waste Saver</Link>
+          <Link to="/" className="nav-brand" aria-label="Food Waste Saver - home"><img className="brand-logo" src="/logo.png" alt="Food Waste Saver" /></Link>
           <div className="nav-actions">
             <button type="button" className="chip loc-chip" onClick={() => setPromptOpen(true)}>
               📍 <span className="loc-label">{saved ? (saved.label || 'Location set') : 'Set location'}</span>
-            </button>
-            <button type="button" className="chip lang-cycle" onClick={cycleLang} aria-label="Change language">
-              🌐 {LANG_NAMES[lang]}
             </button>
             {!loading && !user && (
               <>
@@ -87,7 +79,6 @@ export default function Nav() {
         <nav className="nav-sub">
           <Link to="/" className="nav-link">{t('navHome')}</Link>
           <Link to="/browse" className="nav-link">{t('navBrowse')}</Link>
-          <Link to="/faq" className="nav-link">{t('navFaq')}</Link>
           {user && user.activeRole === 'PROVIDER' && (
             <Link to="/listings/new" className="nav-link nav-link-accent">{t('navPostFood')}</Link>
           )}
@@ -120,6 +111,21 @@ export default function Nav() {
               {isAdmin && (
                 <Link to="/admin" className="nav-menu-item">{t('navAdmin')}</Link>
               )}
+              <div className="nav-menu-lang">
+                <span className="nav-menu-label">🌐 Language</span>
+                <div className="lang-row">
+                  {LANG_ORDER.map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      className={lang === code ? 'lang-pill active' : 'lang-pill'}
+                      onClick={() => setLang(code)}
+                    >
+                      {LANG_NAMES[code]}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {user.accountType === 'USER' && (
                 <div className="nav-menu-roles" aria-label="Active role">
                   <button

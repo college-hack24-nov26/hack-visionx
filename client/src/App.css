@@ -617,3 +617,18 @@ a.card:active { transform: scale(0.99); }
 }
 .locpick-map { height: 320px; border-radius: 14px; overflow: hidden; margin: 10px 0; }
 .pin-icon { background: none; border: none; }
+
+/* ---------- Nav cleanup: logo image only, language in the menu ---------- */
+.nav-brand::before { display: none; }
+.nav-brand { gap: 0; }
+.brand-logo { height: 40px; width: auto; max-width: 160px; object-fit: contain; border-radius: 10px; display: block; }
+.nav-menu-lang { padding: 10px 14px 12px; border-top: 1px solid rgba(32, 48, 42, 0.08); display: grid; gap: 8px; }
+.nav-menu-label { font-size: 0.82rem; font-weight: 700; color: rgba(32, 48, 42, 0.65); }
+.lang-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.lang-pill {
+  border: 1.5px solid rgba(30, 158, 106, 0.35); background: #fff; color: var(--ink);
+  border-radius: 999px; padding: 8px 13px; font: inherit; font-weight: 700;
+  font-size: 0.88rem; cursor: pointer; min-height: 40px;
+}
+.lang-pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+@media (max-width: 640px) { .brand-logo { height: 36px; } }
