@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
@@ -94,7 +94,7 @@ function Home() {
         </section>
       )}
 
-      
+      <section className="card">
         <h2>{t('homeHowItWorks')}</h2>
         <ol className="steps">
           <li><strong>{t('homeStep1Title')}</strong> - {t('homeStep1Text')}</li>
@@ -102,6 +102,8 @@ function Home() {
           <li><strong>{t('homeStep3Title')}</strong> - {t('homeStep3Text')}</li>
         </ol>
         <p>{t('homeSafetyLine')}</p>
+      </section>
+
       {impact && (
         <section className="card">
           <h2>{t('homeImpactWall')}</h2>
@@ -117,18 +119,6 @@ function Home() {
         </section>
       )}
 
-      <section className="card">
-        <h2>System status</h2>
-        {failed && <p className="bad">Backend unreachable — is the server running?</p>}
-        {!failed && !health && <p>Checking…</p>}
-        {health && (
-          <p className="ok">
-            Backend: <strong>{health.service}</strong> · Database:{' '}
-            <strong>{health.database}</strong> · Registered users:{' '}
-            <strong>{health.users}</strong>
-          </p>
-        )}
-      </section>
     </main>
   );
 }
