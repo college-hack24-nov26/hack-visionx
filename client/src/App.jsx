@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import Nav from './components/Nav';
 import InviteBanner from './components/InviteBanner';
@@ -23,6 +23,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 function Home() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [health, setHealth] = useState(null);
   const [failed, setFailed] = useState(false);
   const [impact, setImpact] = useState(null);
@@ -79,6 +80,14 @@ function Home() {
         </div>
       </section>
 
+      {!user && (
+        <section className="card">
+          <h2>See how it works</h2>
+          <video className="demo-video" controls muted playsInline preload="metadata" src="/demo.mp4" />
+          <p className="card-meta">A one-minute walkthrough: post surplus food, claim it nearby, collect with a pickup code.</p>
+        </section>
+      )}
+
       {live && (
         <section className="card">
           <h2>{t('homeStatLiveNow')}</h2>
@@ -93,16 +102,6 @@ function Home() {
           )}
         </section>
       )}
-
-      <section className="card">
-        <h2>{t('homeHowItWorks')}</h2>
-        <ol className="steps">
-          <li><strong>{t('homeStep1Title')}</strong> - {t('homeStep1Text')}</li>
-          <li><strong>{t('homeStep2Title')}</strong> - {t('homeStep2Text')}</li>
-          <li><strong>{t('homeStep3Title')}</strong> - {t('homeStep3Text')}</li>
-        </ol>
-        <p>{t('homeSafetyLine')}</p>
-      </section>
 
       {impact && (
         <section className="card">
@@ -147,6 +146,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/users/:id" element={<UserProfile />} />
           </Routes>
+          <Link to="/faq" className="faq-fab" aria-label="Help and FAQ">?</Link>
         </div>
       </AuthProvider>
         </LanguageProvider>
@@ -156,3 +156,4 @@ function App() {
 }
 
 export default App;
+

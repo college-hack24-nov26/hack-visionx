@@ -128,6 +128,12 @@ export default function Faq() {
           </div>
         ))}
       </section>
+      <section className="card">
+        <h2>Watch: how Food Waste Saver works</h2>
+        <video className="demo-video" controls muted playsInline preload="metadata" src="/demo.mp4" />
+        <p className="card-meta">A one-minute walkthrough: post surplus food, claim it nearby, collect with a pickup code.</p>
+      </section>
     </main>
   );
 }
+
