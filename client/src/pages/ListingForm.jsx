@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useSavedLocation } from "../context/LocationContext";
 import { devicePosition, reverseLabel } from "../lib/location";
 import { CATEGORIES, DIETARY, SAFETY_IDS, SAFETY_LABELS } from "../lib/format";
+import CameraCapture from "../components/CameraCapture";
 
 const PORTION_TYPES = {
   INDIVIDUAL_MEALS: "Individual meals",
@@ -52,6 +53,7 @@ export default function ListingForm() {
   const [alternatives, setAlternatives] = useState([]);
   const [point, setPoint] = useState(null);
   const [pointBusy, setPointBusy] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const touched = useRef(new Set());
   const recogSeq = useRef(0);
 
@@ -194,18 +196,20 @@ export default function ListingForm() {
     setError(data.error || "Could not publish this listing");
   }
 
-  async function handlePhotoEdit(e) {
-    const file = e.target.files?.[0];
-    if (!file || !savedId) return;
+  // One intake for every photo source - file picker or camera capture.
+  function acceptPhoto(file) {
+    if (!file) return;
     if (file.size > 5 * 1024 * 1024) { setError("Photo must be 5 MB or smaller."); return; }
     setError("");
-    try {
-      const url = await uploadPhoto(savedId, file);
-      setPhotoUrl(url);
-      setNotice("Photo uploaded.");
-    } catch (err) {
-      setError(err.message || "Photo upload failed");
+    if (id) {
+      uploadPhoto(savedId, file)
+        .then((url) => { setPhotoUrl(url); setNotice("Photo uploaded."); })
+        .catch((err) => setError(err.message || "Photo upload failed"));
+      return;
     }
+    setPendingPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    handleRecognize(file);
   }
 
   function applySuggestion(s) {
@@ -252,13 +256,8 @@ export default function ListingForm() {
   }
 
   function onTopPhoto(e) {
-    const file = e.target.files?.[0] || null;
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setError("Photo must be 5 MB or smaller."); return; }
-    if (id) { handlePhotoEdit(e); return; }
-    setPendingPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
-    handleRecognize(file);
+    acceptPhoto(e.target.files?.[0] || null);
+    e.target.value = "";
   }
 
   if (authLoading || loadingListing) return <p>Loading...</p>;
@@ -288,6 +287,17 @@ export default function ListingForm() {
             <img className="form-photo" src={photoPreview || API_BASE + photoUrl} alt="" />
           )}
           <input type="file" accept="image/*" onChange={onTopPhoto} />
+          <div className="recog-row">
+            <button type="button" className="btn btn-ghost" onClick={() => setCameraOpen(true)}>
+              📷 Scan with camera
+            </button>
+          </div>
+          {cameraOpen && (
+            <CameraCapture
+              onCapture={(f) => { acceptPhoto(f); setCameraOpen(false); }}
+              onClose={() => setCameraOpen(false)}
+            />
+          )}
           {!id && (
             <>
               {recogBusy && <p className="recog-line">Recognizing...</p>}

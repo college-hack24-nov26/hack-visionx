@@ -447,3 +447,23 @@ a.card:active { transform: scale(0.99); }
 .received-row > span { min-width: 0; overflow-wrap: anywhere; }
 .claim-card { overflow: hidden; }
 .claim-body { overflow-wrap: anywhere; }
+
+/* ---------- Camera capture ---------- */
+.camera-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(24, 36, 30, 0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.camera-card {
+  background: #fff; border-radius: 22px; padding: 16px;
+  width: 100%; max-width: 520px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.3);
+}
+.camera-video {
+  width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 14px; background: #101613; display: block;
+}
+.camera-actions { display: flex; gap: 10px; margin-top: 14px; }
+.camera-actions .btn { flex: 1; }
+.camera-card .hint { margin: 10px 0 0; text-align: center; }
