@@ -118,7 +118,32 @@ router.post('/', async (req, res) => {
   }
   const recentCount = await prisma.listing.count({ where: { providerId: req.user.id, createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) } } });
   if (recentCount >= 10) {
-    return res.status(429).json({ error: 'You are posting too quickly - please wait a little before adding more listings.' });
+    // Spam strikes: every blocked attempt after the hourly limit is a
+    // strike. Three strikes suspend the account automatically for
+    // 4 days; an admin can lift it earlier (or re-suspend manually).
+    const strikes = (req.user.spamStrikes || 0) + 1;
+    if (strikes >= 3) {
+      const until = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          isSuspended: true, suspendedUntil: until,
+          suspendReason: 'Automatic suspension: repeated spam posting.',
+          spamStrikes: 0,
+        },
+      });
+      try {
+        const { logAudit } = require('./audit');
+        await logAudit({ actorId: req.user.id, actorEmail: req.user.email, action: 'USER_AUTO_SUSPEND', targetType: 'USER', targetId: req.user.id, detail: req.user.email });
+      } catch { /* audit is best-effort */ }
+      return res.status(403).json({
+        error: 'Your account has been suspended for 4 days for repeated spam posting.',
+        suspended: true, suspendedUntil: until,
+        suspendReason: 'Automatic suspension: repeated spam posting.',
+      });
+    }
+    await prisma.user.update({ where: { id: req.user.id }, data: { spamStrikes: strikes } });
+    return res.status(429).json({ error: `You are posting too quickly - please wait a little before adding more listings. Warning: repeated spam suspends your account for 4 days (strike ${strikes} of 3).` });
   }
   const errors = {};
   const data = extractFields(req.body || {}, errors);
@@ -281,4 +306,5 @@ router.post('/:id/photo', (req, res) => {
 
 
 module.exports = router;
+
 

@@ -70,6 +70,9 @@ model User {
   orgRegNo     String?
   orgAddress   String?
   isSuspended  Boolean     @default(false)
+  suspendedUntil DateTime?
+  suspendReason  String?
+  spamStrikes    Int         @default(0)
   isMainAdmin  Boolean     @default(false)
   sessions     Session[]
   listings     Listing[]
@@ -237,3 +240,4 @@ model Review {
 
   @@unique([claimId, reviewerId])
 }
+

@@ -22,7 +22,7 @@ function publicUser(u) {
   return {
     id: u.id, name: u.name, email: u.email, mobile: u.mobile,
     accountType: u.accountType, activeRole: u.activeRole, orgName: u.orgName,
-    isSuspended: u.isSuspended, createdAt: u.createdAt,
+    isSuspended: u.isSuspended, suspendedUntil: u.suspendedUntil, suspendReason: u.suspendReason, createdAt: u.createdAt,
   };
 }
 
@@ -37,7 +37,7 @@ router.post('/users/:id/suspend', async (req, res) => {
   if (target.accountType === 'ADMIN') {
     return res.status(400).json({ error: 'Admin accounts cannot be suspended' });
   }
-  const updated = await prisma.user.update({ where: { id: target.id }, data: { isSuspended: true } });
+  const updated = await prisma.user.update({ where: { id: target.id }, data: { isSuspended: true, suspendedUntil: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), suspendReason: 'Suspended by admin.' } });
   await logAudit({ actorId: req.user.id, actorEmail: req.user.email, action: 'USER_SUSPEND', targetType: 'USER', targetId: target.id, detail: target.email });
   res.json({ user: publicUser(updated) });
 });
@@ -45,7 +45,7 @@ router.post('/users/:id/suspend', async (req, res) => {
 router.post('/users/:id/unsuspend', async (req, res) => {
   const target = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (!target) return res.status(404).json({ error: 'User not found' });
-  const updated = await prisma.user.update({ where: { id: target.id }, data: { isSuspended: false } });
+  const updated = await prisma.user.update({ where: { id: target.id }, data: { isSuspended: false, suspendedUntil: null, suspendReason: null, spamStrikes: 0 } });
   await logAudit({ actorId: req.user.id, actorEmail: req.user.email, action: 'USER_UNSUSPEND', targetType: 'USER', targetId: target.id, detail: target.email });
   res.json({ user: publicUser(updated) });
 });
@@ -155,4 +155,5 @@ router.get('/audit', async (req, res) => {
 });
 
 module.exports = router;
+
 

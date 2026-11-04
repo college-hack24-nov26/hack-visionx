@@ -17,6 +17,16 @@ router.use(requireAuth, requireNotSuspended);
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 symbols, no I/O/0/1
 const LIVE_FOR_CLAIMS = ['LIVE', 'PARTIALLY_CLAIMED'];
 
+// Great-circle distance (km) between two {lat, lng} points.
+function haversineKm(a, b) {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const s = Math.sin(dLat / 2) ** 2
+    + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 function genCode() {
   let s = '';
   for (let i = 0; i < 8; i++) s += ALPHABET[crypto.randomInt(ALPHABET.length)];
@@ -73,6 +83,20 @@ router.post('/', async (req, res) => {
   if (listing.providerId === u.id) return res.status(403).json({ error: 'You cannot claim your own listing' });
   if (!LIVE_FOR_CLAIMS.includes(listing.status)) return res.status(409).json({ error: 'This listing is not open for claims' });
   if (listing.deadline && listing.deadline.getTime() <= Date.now()) return res.status(409).json({ error: 'This listing has expired' });
+  // FR-B4 enforced on the server: when the listing has a pickup point,
+  // the claimer's location (sent once with the claim, never stored) must
+  // be within 5 km - the browse filter alone is not enforcement.
+  if (listing.latitude != null && listing.longitude != null) {
+    const la = Number(req.body?.claimerLat);
+    const ln = Number(req.body?.claimerLng);
+    if (!Number.isFinite(la) || !Number.isFinite(ln)) {
+      return res.status(400).json({ errors: { location: 'Set your location before claiming - pickups are limited to within 5 km of the pickup point.' } });
+    }
+    const distKm = haversineKm({ lat: la, lng: ln }, { lat: listing.latitude, lng: listing.longitude });
+    if (distKm > 5) {
+      return res.status(403).json({ error: `This pickup point is ${distKm.toFixed(1)} km away. Claims are limited to within 5 km.` });
+    }
+  }
   if (n > (listing.portionsRemaining ?? 0)) {
     return res.status(400).json({ errors: { portions: `Only ${listing.portionsRemaining} portions remain` } });
   }
@@ -284,3 +308,4 @@ router.post('/:id/verify', async (req, res) => {
 });
 
 module.exports = router;
+

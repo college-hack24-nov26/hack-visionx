@@ -34,6 +34,36 @@ function publicUser(u) {
   };
 }
 
+// A suspension with an end time lifts itself the first time it is
+// checked after that time; one without an end time lasts until an
+// admin lifts it. Returns the active suspension or null.
+async function activeSuspension(user) {
+  if (!user.isSuspended) return null;
+  if (user.suspendedUntil && new Date(user.suspendedUntil).getTime() <= Date.now()) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isSuspended: false, suspendedUntil: null, suspendReason: null, spamStrikes: 0 },
+    }).catch(() => {});
+    user.isSuspended = false;
+    user.suspendedUntil = null;
+    user.suspendReason = null;
+    return null;
+  }
+  return {
+    suspendedUntil: user.suspendedUntil,
+    suspendReason: user.suspendReason || 'Suspended by an admin.',
+  };
+}
+
+function suspendedBody(s) {
+  return {
+    error: 'This account is suspended.',
+    suspended: true,
+    suspendedUntil: s.suspendedUntil,
+    suspendReason: s.suspendReason,
+  };
+}
+
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
@@ -82,6 +112,10 @@ async function requireAuth(req, res, next) {
     const payload = jwt.verify(token, ACCESS_SECRET);
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) return res.status(401).json({ error: 'Sign in required' });
+    const susp = await activeSuspension(user);
+    if (susp && !(req.originalUrl || '').endsWith('/api/auth/logout')) {
+      return res.status(403).json(suspendedBody(susp));
+    }
     req.user = user; // always the FRESH database row - role switches apply at once
     next();
   } catch (err) {
@@ -150,6 +184,8 @@ router.post('/register', async (req, res) => {
         orgAddress: type === 'NGO' ? (body.orgAddress || '').trim() || null : null,
       },
     });
+    const susp = await activeSuspension(user);
+    if (susp) return res.status(403).json(suspendedBody(susp));
     const tokens = await createSessionAndTokens(user.id);
     return res.status(201).json({ user: publicUser(user), ...tokens });
   } catch (err) {
@@ -187,6 +223,11 @@ router.post('/refresh', async (req, res) => {
         || session.refreshHash !== hashToken(refreshToken)) {
       if (session) await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
       return res.status(401).json({ error: 'Session expired - please log in again' });
+    }
+    const ruser = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (ruser) {
+      const susp = await activeSuspension(ruser);
+      if (susp) return res.status(403).json(suspendedBody(susp));
     }
     const newRefresh = jwt.sign({ sub: payload.sub, sid: session.id }, REFRESH_SECRET, { expiresIn: '7d' });
     await prisma.session.update({
@@ -295,3 +336,4 @@ router.post('/profile/photo', requireAuth, (req, res) => {
 });
 router.requireNotSuspended = requireNotSuspended;
 module.exports = router;
+
