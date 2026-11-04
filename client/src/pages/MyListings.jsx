@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { portionsText, timeLeft } from "../lib/format";
 import LiveShareControl from "../components/LiveShareControl";
 import ReviewForm from "../components/ReviewForm";
+import CodeScanner from "../components/CodeScanner";
 
 const STATUS_LABELS = {
   DRAFT: "Draft",
@@ -45,6 +46,7 @@ export default function MyListings() {
   const [verifyMsg, setVerifyMsg] = useState({});
   const [busyId, setBusyId] = useState("");
   const [reviewedIds, setReviewedIds] = useState([]);
+  const [scanClaimId, setScanClaimId] = useState("");
 
   const load = useCallback(() => {
     api("/api/listings/mine").then(({ status, data }) => {
@@ -91,8 +93,8 @@ export default function MyListings() {
     else setError(data.error || "Could not cancel this listing");
   }
 
-  async function verify(claim) {
-    const code = (codes[claim.id] || "").trim().toUpperCase();
+  async function verify(claim, codeOverride) {
+    const code = (codeOverride || codes[claim.id] || "").trim().toUpperCase();
     if (!code) {
       setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: "Type the claimer's pickup code first." } }));
       return;
@@ -182,6 +184,9 @@ export default function MyListings() {
                         <button type="button" className="btn btn-primary btn-small" disabled={busyId === claim.id} onClick={() => verify(claim)}>
                           Verify pickup
                         </button>
+                        <button type="button" className="btn btn-ghost btn-small" onClick={() => setScanClaimId(claim.id)}>
+                          📷 Scan code
+                        </button>
                       </span>
                     )}
                     {verifyMsg[claim.id] && (
@@ -204,6 +209,18 @@ export default function MyListings() {
           </div>
         ))}
       </div>
+      {scanClaimId && (
+        <CodeScanner
+          onClose={() => setScanClaimId("")}
+          onResult={(code) => {
+            const claim = received.find((c) => c.id === scanClaimId);
+            setCodes((m) => ({ ...m, [scanClaimId]: code }));
+            setScanClaimId("");
+            if (claim) verify(claim, code);
+          }}
+        />
+      )}
     </section>
   );
 }
+
