@@ -42,6 +42,20 @@ router.post('/', requireAuth, requireNotSuspended, upload.single('photo'), async
     return res.status(503).json({ error: 'Recognition is unavailable right now - you can still type the details.' });
   }
 
+  // No confident answer (e.g. the photo may not be food at all): say so
+  // honestly instead of dressing up a guess as a suggestion.
+  if (!data.featured) {
+    return res.json({
+      suggestion: null,
+      uncertain: true,
+      alternatives: (data.alternatives || [])
+        .filter((a) => a.confidence >= 0.1)
+        .map((a) => ({
+          foodName: suggestionFor(a.label).foodName, confidence: a.confidence, source: a.source,
+        })),
+    });
+  }
+
   const s = suggestionFor(data.featured.label);
   res.json({
     suggestion: { ...s, confidence: data.featured.confidence, source: data.featured.source },
@@ -52,3 +66,4 @@ router.post('/', requireAuth, requireNotSuspended, upload.single('photo'), async
 });
 
 module.exports = router;
+

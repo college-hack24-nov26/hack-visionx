@@ -31,6 +31,10 @@ GAP_LABELS = {"idli", "samosa", "misal_pav"}
 GAP_BAR = 0.90
 SPECIALIST_BAR = 0.90
 UNCERTAIN = 0.50
+# Below this, the primary's top pick is a forced guess from a food-only
+# vocabulary - that is how non-food photos got dish names. We return no
+# featured answer instead, and the app asks the donor to type the name.
+FLOOR = 0.35
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -40,7 +44,18 @@ MODELS = {}
 
 def load_model(key, source):
     try:
-        processor = AutoImageProcessor.from_pretrained(source)
+        try:
+            processor = AutoImageProcessor.from_pretrained(source)
+        except Exception:
+            # Some public checkpoints ship a broken preprocessor config
+            # (therealcyberlord/vit-indian-food has no image_processor_type).
+            # Fall back to the primary model's processor - same ViT input
+            # pipeline (224px, same normalisation), so it is a safe stand-in.
+            if MODELS.get("primary"):
+                processor = MODELS["primary"][0]
+                print(f"[inference] {key}: reusing the primary image processor")
+            else:
+                raise
         model = AutoModelForImageClassification.from_pretrained(source)
         model.to(DEVICE)
         model.eval()
@@ -114,6 +129,16 @@ def predict(file: UploadFile = File(...)):
                 "alternatives": [{**a, "source": "primary"} for a in primary_top],
             }
 
+    # 4) Confidence floor: never present a low-confidence guess as the
+    # answer. The client shows "couldn't recognize" and the donor types
+    # the name - an honest miss beats a confident wrong dish.
+    if best["confidence"] < FLOOR:
+        return {
+            "featured": None,
+            "uncertain": True,
+            "alternatives": [{**a, "source": "primary"} for a in primary_top],
+        }
+
     return {
         "featured": {**best, "source": "primary"},
         "alternatives": [{**a, "source": "primary"} for a in primary_top[1:]],
@@ -122,3 +147,4 @@ def predict(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8001)
+
