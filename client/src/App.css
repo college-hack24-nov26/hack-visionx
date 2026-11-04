@@ -548,3 +548,58 @@ a.card:active { transform: scale(0.99); }
 }
 .recog-note { background: #fdf3e0; border: 1px solid var(--accent); border-radius: 12px; padding: 10px 12px; }
 .bell-item.swiping { transition: none; }
+
+/* ---------- Mobile sizing pass (phones first) ---------- */
+@media (max-width: 640px) {
+  /* Header: the brand row wraps instead of squeezing off-screen */
+  .nav { padding: 10px 12px; gap: 8px; }
+  .nav-top { flex-wrap: wrap; row-gap: 8px; }
+  .nav-brand { font-size: 1.06rem; }
+  .nav-brand::before { width: 30px; height: 30px; border-radius: 9px; font-size: 16px; }
+  .nav-actions { flex-wrap: wrap; gap: 6px; row-gap: 6px; }
+  .loc-label { display: none; }
+  .nav-actions .btn { min-height: 42px; padding: 9px 15px; }
+  .lang-cycle, .loc-chip { min-height: 40px; }
+
+  /* Sub-nav links: real 44px tap targets */
+  .nav-sub { gap: 6px; }
+  .nav-sub .nav-link {
+    min-height: 44px; display: inline-flex; align-items: center;
+    padding: 10px 12px; background: var(--mint); border-radius: 999px;
+  }
+
+  /* Cards and forms breathe on small screens */
+  section.card { padding: 18px 16px; }
+  .auth-card, .form-card { padding: 22px 18px; }
+  .detail-card { padding: 20px 16px; }
+  .form-actions .btn { flex: 1; }
+
+  /* Browse filters stack: search full width, selects in pairs */
+  .controls { gap: 8px; }
+  .controls .control-input { flex: 1 1 45%; min-width: 0; }
+  .controls .control-input:first-child { flex-basis: 100%; }
+
+  /* Listing card secondary text: a touch larger and darker */
+  .card-meta { font-size: 14px; color: rgba(32, 48, 42, 0.74); }
+  .urg { font-size: 12px; padding: 6px 11px; }
+
+  /* Impact wall: two tidy columns on phones */
+  .impact-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr)); }
+
+  /* Notifications panel pinned under the header, full width */
+  .bell-panel { position: fixed; top: 118px; left: 12px; right: 12px; width: auto; max-width: none; }
+
+  /* Location prompt buttons easy to tap */
+  .loc-prompt .recog-row .btn { flex: 1; }
+
+  /* Password eye: bigger tap target */
+  .pw-eye { padding: 12px; right: 2px; font-size: 20px; }
+  .pw-wrap input { padding-right: 54px; }
+
+  .faq-fab { width: 52px; height: 52px; font-size: 24px; right: 14px; }
+}
+
+/* Impact wall on wide screens: balanced 4 + 4 instead of 7 + 1 */
+@media (min-width: 1024px) {
+  .impact-grid { grid-template-columns: repeat(4, 1fr); }
+}
