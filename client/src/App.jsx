@@ -94,7 +94,7 @@ function Home() {
         </section>
       )}
 
-      <section className="card">
+      
         <h2>{t('homeHowItWorks')}</h2>
         <ol className="steps">
           <li><strong>{t('homeStep1Title')}</strong> - {t('homeStep1Text')}</li>
@@ -102,8 +102,6 @@ function Home() {
           <li><strong>{t('homeStep3Title')}</strong> - {t('homeStep3Text')}</li>
         </ol>
         <p>{t('homeSafetyLine')}</p>
-      </section>
-
       {impact && (
         <section className="card">
           <h2>{t('homeImpactWall')}</h2>
