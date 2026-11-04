@@ -17,6 +17,7 @@ import Faq from './pages/Faq';
 import NgoPanel from './pages/NgoPanel';
 import Profile from './pages/Profile';
 import UserProfile from './pages/UserProfile';
+import SuspendedPage from './pages/SuspendedPage';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -122,11 +123,12 @@ function Home() {
   );
 }
 
-function App() {
+function Shell() {
+  const { suspension, clearSuspension } = useAuth();
+  if (suspension) {
+    return <SuspendedPage until={suspension.until} reason={suspension.reason} onDone={clearSuspension} />;
+  }
   return (
-    <BrowserRouter>
-      <LanguageProvider> 
-        <AuthProvider>
         <div className="page">
           <Nav />
           <InviteBanner />
@@ -148,6 +150,15 @@ function App() {
           </Routes>
           <Link to="/faq" className="faq-fab" aria-label="Help and FAQ">?</Link>
         </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <LanguageProvider> 
+        <AuthProvider>
+        <Shell />
       </AuthProvider>
         </LanguageProvider>
 
@@ -156,4 +167,5 @@ function App() {
 }
 
 export default App;
+
 

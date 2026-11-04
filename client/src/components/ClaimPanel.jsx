@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import QRCode from "qrcode";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useSavedLocation } from "../context/LocationContext";
+import { haversineKm, formatKm } from "../lib/location";
 import { portionsText } from "../lib/format";
 
 // "3 meals" style text for any count, reusing portionsText's own unit words
@@ -19,10 +21,16 @@ export default function ClaimPanel({ listing, onChanged }) {
   const [error, setError] = useState("");
   const [done, setDone] = useState(null);
   const [qr, setQr] = useState("");
+  const { saved, hasCoords } = useSavedLocation();
 
   // Admins cannot claim - the claim form never applies to them.
   const claimerRole = !!user && user.accountType !== "ADMIN" && (user.accountType !== "USER" || user.activeRole === "CLAIMER");
   const open = (listing.status === "LIVE" || listing.status === "PARTIALLY_CLAIMED") && listing.portionsRemaining > 0;
+  const distanceKm = hasCoords && listing.latitude != null && listing.longitude != null
+    ? haversineKm(saved, { lat: listing.latitude, lng: listing.longitude })
+    : null;
+  const tooFar = distanceKm != null && distanceKm > 5;
+  const needsLoc = listing.latitude != null && listing.longitude != null && !hasCoords;
 
   // Do I already hold a confirmed claim on this listing?
   useEffect(() => {
@@ -50,14 +58,17 @@ export default function ClaimPanel({ listing, onChanged }) {
     setError("");
     const { status, data } = await api("/api/claims", {
       method: "POST",
-      body: JSON.stringify({ listingId: listing.id, portions }),
+      body: JSON.stringify({
+        listingId: listing.id, portions,
+        ...(hasCoords ? { claimerLat: saved.lat, claimerLng: saved.lng } : {}),
+      }),
     });
     setBusy(false);
     if (status === 201) {
       setDone({ claim: data.claim, pickupCode: data.pickupCode });
       if (onChanged) onChanged();
     } else {
-      setError(data.errors?.portions || data.error || "Could not claim this listing");
+      setError(data.errors?.portions || data.errors?.location || data.error || "Could not claim this listing");
     }
   }
 
@@ -123,16 +134,20 @@ export default function ClaimPanel({ listing, onChanged }) {
     <div className="claim-panel">
       <h2>Claim this food</h2>
       <p className="card-meta">{portionsText(listing)} · how many do you need?</p>
+      {distanceKm != null && <p className="card-meta">📍 {formatKm(distanceKm)} from your saved location</p>}
+      {tooFar && <div className="form-error">This pickup point is {formatKm(distanceKm)} away — claims are limited to within 5 km.</div>}
+      {needsLoc && <div className="notice">Set your location from the top bar to claim — pickups are limited to within 5 km of the pickup point.</div>}
       <div className="stepper">
         <button type="button" className="btn btn-ghost" onClick={() => setPortions((p) => Math.max(1, p - 1))} disabled={portions <= 1}>−</button>
         <span className="stepper-value">{portions}</span>
         <button type="button" className="btn btn-ghost" onClick={() => setPortions((p) => Math.min(listing.portionsRemaining, p + 1))} disabled={portions >= listing.portionsRemaining}>+</button>
       </div>
       {error && <div className="form-error">{error}</div>}
-      <button type="button" className="btn btn-primary" disabled={busy} onClick={doClaim}>
+      <button type="button" className="btn btn-primary" disabled={busy || tooFar || needsLoc} onClick={doClaim}>
         {busy ? "Claiming…" : `Claim ${countText(listing, portions)}`}
       </button>
     </div>
   );
 }
+
 

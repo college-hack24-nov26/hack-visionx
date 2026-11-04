@@ -1,11 +1,34 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { api, saveSession, saveUser, clearSession, getAccessToken, getRefreshToken, getCachedUser } from '../lib/api';
+import { api, saveSession, saveUser, clearSession, getAccessToken, getRefreshToken, getCachedUser, setSuspendedHandler } from '../lib/api';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [suspension, setSuspension] = useState(() => {
+    try {
+      const raw = localStorage.getItem('fws_suspension');
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (s.until && new Date(s.until).getTime() <= Date.now()) return null;
+      return s;
+    } catch { return null; }
+  });
+
+  useEffect(() => {
+    setSuspendedHandler((data) => {
+      const s = { until: data.suspendedUntil || null, reason: data.suspendReason || '' };
+      try { localStorage.setItem('fws_suspension', JSON.stringify(s)); } catch { /* private mode */ }
+      setSuspension(s);
+      setUser(null);
+    });
+  }, []);
+
+  function clearSuspension() {
+    try { localStorage.removeItem('fws_suspension'); } catch { /* ignore */ }
+    setSuspension(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -97,7 +120,7 @@ export function AuthProvider({ children }) {
     return null;
   }
 
-  const value = { user, loading, login, register, logout, switchRole, refreshUser };
+  const value = { user, loading, login, register, logout, switchRole, refreshUser, suspension, clearSuspension };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
@@ -106,3 +129,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
   return ctx;
 }
+

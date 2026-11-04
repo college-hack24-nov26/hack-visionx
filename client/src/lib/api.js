@@ -31,6 +31,18 @@ export function saveSession(data) {
   if (data.user) saveUser(data.user);
 }
 
+let suspendedHandler = null;
+export function setSuspendedHandler(fn) { suspendedHandler = fn; }
+
+// A 403 carrying { suspended: true } anywhere means the account is
+// suspended: drop the session and let the app show the suspension page.
+export function noteSuspended(data) {
+  if (data && data.suspended) {
+    clearSession();
+    if (suspendedHandler) suspendedHandler(data);
+  }
+}
+
 export function clearSession() {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
@@ -46,6 +58,11 @@ export async function tryRefresh() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     });
+    if (res.status === 403) {
+      const d = await res.json().catch(() => null);
+      noteSuspended(d);
+      return false;
+    }
     if (!res.ok) return false;
     const data = await res.json();
     if (!data.accessToken) return false;
@@ -83,6 +100,8 @@ if (typeof body === 'string') {
   let data = null;
   try { data = await res.json(); } catch { data = null; }
 
+  if (res.status === 403 && data && data.suspended) noteSuspended(data);
+
   if (res.status === 401 && !retried && !NO_REFRESH_PATHS.includes(path)) {
     const ok = await tryRefresh();
     if (ok) return request(path, options, true);
@@ -94,3 +113,4 @@ if (typeof body === 'string') {
 export function api(path, options = {}) {
   return request(path, options, false);
 }
+
