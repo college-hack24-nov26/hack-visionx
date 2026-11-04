@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import {
   loadSavedLocation, saveSavedLocation, clearSavedLocation,
-  promptDismissed, dismissPrompt, devicePosition, reverseLabel, hasCoords,
+  promptDismissed, dismissPrompt, devicePosition, reverseLabel, hasCoords, geocodePlace,
 } from '../lib/location';
 
 const LocationContext = createContext(null);
@@ -36,12 +36,17 @@ export function LocationProvider({ children }) {
     return loc;
   }, [setLocation]);
 
-  const setTextLocation = useCallback((label) => {
-    const loc = { label: String(label || '').trim() };
-    if (!loc.label) return null;
-    setLocation(loc);
+  // A typed area is resolved to real coordinates (geocoded), never
+  // stored as a bare label - without coordinates there are no
+  // distances and no 5 km radius.
+  const setTextLocation = useCallback(async (label) => {
+    const q = String(label || '').trim();
+    if (!q) return null;
+    const found = await geocodePlace(q);
+    if (!found) return null;
+    setLocation(found);
     setPromptOpen(false);
-    return loc;
+    return found;
   }, [setLocation]);
 
   const value = useMemo(() => ({
@@ -58,3 +63,4 @@ export function useSavedLocation() {
   if (!ctx) throw new Error('useSavedLocation must be used inside LocationProvider');
   return ctx;
 }
+

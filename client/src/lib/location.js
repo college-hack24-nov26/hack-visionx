@@ -1,7 +1,8 @@
 // Saved location + distance helpers (FR-LOC1). The saved location
-// lives ONLY in this browser (localStorage) - it is never sent to
-// our server. Coordinates are used on-device for distance, radius
-// and routing features.
+// lives in this browser (localStorage). Coordinates are used on-device
+// for distance, radius and routing; they are sent to our server only
+// once, as part of a claim, so the server can enforce the 5 km pickup
+// radius - and they are never stored there.
 const KEY = 'fws_saved_location';
 const DISMISS_KEY = 'fws_loc_prompt_dismissed';
 
@@ -61,6 +62,27 @@ export async function reverseLabel(lat, lng) {
   }
 }
 
+// Free, key-less forward geocoding (OpenStreetMap Nominatim): a typed
+// place name -> real coordinates, so a manually entered area behaves
+// exactly like a GPS fix (distances and the 5 km radius included).
+export async function geocodePlace(name) {
+  const q = String(name || '').trim();
+  if (!q) return null;
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(q)}`);
+    if (!r.ok) return null;
+    const arr = await r.json();
+    if (!Array.isArray(arr) || !arr.length) return null;
+    const lat = parseFloat(arr[0].lat);
+    const lng = parseFloat(arr[0].lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    const label = String(arr[0].display_name || q).split(',').slice(0, 2).join(',').trim() || q;
+    return { label, lat, lng };
+  } catch {
+    return null;
+  }
+}
+
 // One device-location fix as a promise.
 export function devicePosition() {
   return new Promise((resolve, reject) => {
@@ -72,3 +94,4 @@ export function devicePosition() {
     );
   });
 }
+
