@@ -632,3 +632,9 @@ a.card:active { transform: scale(0.99); }
 }
 .lang-pill.active { background: var(--primary); border-color: var(--primary); color: #fff; }
 @media (max-width: 640px) { .brand-logo { height: 36px; } }
+
+/* Brand wordmark beside the logo + vector location icon */
+.nav-brand { gap: 9px; }
+.brand-name { white-space: nowrap; }
+.loc-icon { flex: none; display: inline-block; vertical-align: -3px; }
+.loc-prompt-title .loc-icon { color: var(--primary); }

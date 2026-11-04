@@ -23,10 +23,10 @@ export default function LocationPicker({ initial, onPick, onClose }) {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
     const icon = L.divIcon({
-      html: '<div style="font-size:34px;line-height:1">📍</div>',
+      html: '<svg width="36" height="36" viewBox="0 0 24 24" fill="#1E9E6A" stroke="#ffffff" stroke-width="0.8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
       className: 'pin-icon',
-      iconSize: [34, 34],
-      iconAnchor: [17, 32],
+      iconSize: [36, 36],
+      iconAnchor: [18, 34],
     });
     const marker = L.marker([point.lat, point.lng], { draggable: true, icon }).addTo(map);
     marker.on('dragend', () => {

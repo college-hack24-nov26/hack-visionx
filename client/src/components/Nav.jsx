@@ -45,10 +45,10 @@ export default function Nav() {
     <>
       <header className="nav">
         <div className="nav-top">
-          <Link to="/" className="nav-brand" aria-label="Food Waste Saver - home"><img className="brand-logo" src="/logo.png" alt="Food Waste Saver" /></Link>
+          <Link to="/" className="nav-brand" aria-label="Food Waste Saver - home"><img className="brand-logo" src="/logo.png" alt="" /><span className="brand-name">Food Waste Saver</span></Link>
           <div className="nav-actions">
             <button type="button" className="chip loc-chip" onClick={() => setPromptOpen(true)}>
-              📍 <span className="loc-label">{saved ? (saved.label || 'Location set') : 'Set location'}</span>
+              <svg className="loc-icon" viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg> <span className="loc-label">{saved ? (saved.label || 'Location set') : 'Set location'}</span>
             </button>
             {!loading && !user && (
               <>

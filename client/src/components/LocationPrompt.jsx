@@ -42,7 +42,7 @@ export default function LocationPrompt() {
 
   return (
     <div className="loc-prompt">
-      <p className="loc-prompt-title">📍 <strong>See food near you</strong></p>
+      <p className="loc-prompt-title"><svg className="loc-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg> <strong>See food near you</strong></p>
       <p className="hint">Set your area to see distances on listings and a pickup map when you claim. Typed areas are looked up on the map, so they carry real coordinates. When you claim, your location is sent once to check the 5 km rule — it is never stored.</p>
       {saved && (
         <p className="recog-line">
