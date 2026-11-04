@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { portionsText } from "../lib/format";
@@ -58,6 +59,15 @@ export default function Admin() {
     if (action === "remove") {
       const ok = window.confirm(`Remove the listing "${l.foodName}"? It will disappear from browse.`);
       if (!ok) return;
+    }
+    if (action === "delete") {
+      const ok = window.confirm(`Delete the listing "${l.foodName}" permanently? Its claims go with it. This cannot be undone.`);
+      if (!ok) return;
+      setError(""); setNotice("");
+      const { status, data } = await api(`/api/admin/listings/${l.id}`, { method: "DELETE" });
+      if (status === 200) { setNotice(`Done — "${l.foodName}" deleted.`); loadAll(); }
+      else setError(data.error || "Action failed");
+      return;
     }
     setError(""); setNotice("");
     const { status, data } = await api(`/api/admin/listings/${l.id}/${action}`, { method: "POST" });
@@ -148,9 +158,13 @@ export default function Admin() {
                     <span className="admin-meta">pickup before {new Date(l.deadline).toLocaleString()}</span>
                   </span>
                 </div>
-                {l.status === "REMOVED"
-                  ? <button type="button" className="btn btn-small" onClick={() => listingAction(l, "restore")}>Restore</button>
-                  : <button type="button" className="btn btn-danger btn-small" onClick={() => listingAction(l, "remove")}>Remove</button>}
+                <div className="mine-actions">
+                  <Link className="btn btn-ghost btn-small" to={`/listings/${l.id}/edit`}>Edit</Link>
+                  {l.status === "REMOVED"
+                    ? <button type="button" className="btn btn-small" onClick={() => listingAction(l, "restore")}>Restore</button>
+                    : <button type="button" className="btn btn-small" onClick={() => listingAction(l, "remove")}>Remove</button>}
+                  <button type="button" className="btn btn-danger btn-small" onClick={() => listingAction(l, "delete")}>Delete</button>
+                </div>
               </div>
             ))}
           </div>
@@ -176,3 +190,4 @@ export default function Admin() {
     </section>
   );
 }
+

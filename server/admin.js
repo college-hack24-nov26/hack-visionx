@@ -82,6 +82,15 @@ router.post('/listings/:id/restore', async (req, res) => {
   res.json({ listing: updated });
 });
 
+router.delete('/listings/:id', async (req, res) => {
+  const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
+  if (!listing) return res.status(404).json({ error: 'Listing not found' });
+  // Claims and reviews on the listing cascade away with it (schema onDelete).
+  await prisma.listing.delete({ where: { id: listing.id } });
+  await logAudit({ actorId: req.user.id, actorEmail: req.user.email, action: 'LISTING_DELETE', targetType: 'LISTING', targetId: listing.id, detail: listing.foodName });
+  res.json({ ok: true });
+});
+
 // NGO verification: review queue + decisions
 router.get('/ngo-queue', async (req, res) => {
   const queue = await prisma.user.findMany({
@@ -146,3 +155,4 @@ router.get('/audit', async (req, res) => {
 });
 
 module.exports = router;
+

@@ -25,7 +25,9 @@ export default function Browse() {
   const [radius, setRadius] = useState("ANY");
   const [now, setNow] = useState(Date.now());
 
-  const claimerRole = !!user && (user.accountType !== "USER" || user.activeRole === "CLAIMER");
+  // Admins moderate - they are never treated as claimers, so no radius
+  // filter and no claim UI applies to them; they see every listing.
+  const claimerRole = !!user && user.accountType !== "ADMIN" && (user.accountType !== "USER" || user.activeRole === "CLAIMER");
 
   useEffect(() => {
     let on = true;
@@ -168,3 +170,4 @@ export default function Browse() {
     </section>
   );
 }
+

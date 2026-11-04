@@ -20,7 +20,8 @@ export default function ClaimPanel({ listing, onChanged }) {
   const [done, setDone] = useState(null);
   const [qr, setQr] = useState("");
 
-  const claimerRole = !!user && (user.accountType !== "USER" || user.activeRole === "CLAIMER");
+  // Admins cannot claim - the claim form never applies to them.
+  const claimerRole = !!user && user.accountType !== "ADMIN" && (user.accountType !== "USER" || user.activeRole === "CLAIMER");
   const open = (listing.status === "LIVE" || listing.status === "PARTIALLY_CLAIMED") && listing.portionsRemaining > 0;
 
   // Do I already hold a confirmed claim on this listing?
@@ -134,3 +135,4 @@ export default function ClaimPanel({ listing, onChanged }) {
     </div>
   );
 }
+

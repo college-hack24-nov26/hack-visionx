@@ -101,6 +101,17 @@ async function ownListing(req, res) {
   return listing;
 }
 
+// Same as ownListing, but an admin may open and edit any listing.
+async function ownOrAdminListing(req, res) {
+  const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
+  if (!listing) { res.status(404).json({ error: 'Listing not found' }); return null; }
+  if (listing.providerId !== req.user.id && req.user.accountType !== 'ADMIN') {
+    res.status(403).json({ error: 'This is not your listing' });
+    return null;
+  }
+  return listing;
+}
+
 router.post('/', async (req, res) => {
   if (req.user.activeRole !== 'PROVIDER') {
     return res.status(403).json({ error: 'Switch to Donor mode to post food' });
@@ -127,13 +138,13 @@ router.get('/mine', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
-  const listing = await ownListing(req, res);
+  const listing = await ownOrAdminListing(req, res);
   if (!listing) return;
   res.json({ listing });
 });
 
 router.patch('/:id', async (req, res) => {
-  const listing = await ownListing(req, res);
+  const listing = await ownOrAdminListing(req, res);
   if (!listing) return;
   if (!['DRAFT', 'LIVE'].includes(listing.status)) {
     return res.status(409).json({ error: 'This listing can no longer be edited' });
@@ -186,7 +197,7 @@ function publishErrors(l) {
 }
 
 router.post('/:id/publish', async (req, res) => {
-  const listing = await ownListing(req, res);
+  const listing = await ownOrAdminListing(req, res);
   if (!listing) return;
   if (listing.status === 'LIVE') return res.status(409).json({ error: 'Already published' });
   if (listing.status !== 'DRAFT') return res.status(409).json({ error: 'Only a draft can be published' });
@@ -247,7 +258,7 @@ router.post('/:id/photo', (req, res) => {
       if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'Photo must be 5 MB or smaller' });
       return res.status(400).json({ error: 'Upload failed' });
     }
-    const listing = await ownListing(req, res);
+    const listing = await ownOrAdminListing(req, res);
     if (!listing) return;
     if (!['DRAFT', 'LIVE'].includes(listing.status)) {
       return res.status(409).json({ error: 'This listing can no longer be edited' });
@@ -270,3 +281,4 @@ router.post('/:id/photo', (req, res) => {
 
 
 module.exports = router;
+
