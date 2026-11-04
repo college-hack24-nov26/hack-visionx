@@ -11,7 +11,7 @@ const VEG_SET = new Set(["VEG", "VEGAN"]);
 
 export default function Browse() {
   const { user } = useAuth();
-  const { saved, hasCoords: savedHasCoords } = useSavedLocation();
+  const { saved, hasCoords: savedHasCoords, setPromptOpen } = useSavedLocation();
   const { t } = useLanguage();
   const [listings, setListings] = useState([]);
   const [myClaims, setMyClaims] = useState([]);
@@ -79,6 +79,11 @@ export default function Browse() {
   // FR-B4: signed-in claimers and NGOs with saved coordinates always get
   // the hard 5 km radius - no "show everything" bypass.
   const hardRadius = claimerRole && savedHasCoords;
+  // A claimer or NGO with NO coordinates sees nothing at all: without a
+  // location the 5 km rule cannot be applied, so Browse stays empty
+  // until they set one (a typed area must geocode - a bare label is
+  // not enough, and old label-only saves land here too).
+  const mustLocate = claimerRole && !savedHasCoords;
 
   // Distance from the saved location, computed on this device only.
   const withDist = useMemo(() => listings.map((l) => ({
@@ -90,6 +95,7 @@ export default function Browse() {
 
   const { shown, hiddenByRadius } = useMemo(() => {
     let hidden = 0;
+    if (mustLocate) return { shown: [], hiddenByRadius: 0 };
     const radiusKm = hardRadius ? 5 : (savedHasCoords && radius !== "ANY" ? Number(radius) : null);
     const out = withDist.filter((l) => {
       const hay = `${l.foodName} ${l.details || ""}`.toLowerCase();
@@ -111,7 +117,7 @@ export default function Browse() {
     else if (sort === "DIST_DESC")
       out.sort((a, b) => (b.distanceKm == null ? -Infinity : b.distanceKm) - (a.distanceKm == null ? -Infinity : a.distanceKm) || byTime(a, b));
     return { shown: out, hiddenByRadius: hidden };
-  }, [withDist, q, cat, diet, sort, radius, savedHasCoords, hardRadius]);
+  }, [withDist, q, cat, diet, sort, radius, savedHasCoords, hardRadius, mustLocate]);
 
   return (
     <section className="browse-page">
@@ -148,7 +154,14 @@ export default function Browse() {
         )}
       </div>
 
-      {saved && !savedHasCoords && (
+      {mustLocate && (
+        <div className="notice">
+          <p><strong>Set your location to see food near you.</strong></p>
+          <p>Claims are limited to within 5 km of the pickup point, so Browse only shows listings once your location is set — with real coordinates, not just a name.</p>
+          <button type="button" className="btn btn-primary" onClick={() => setPromptOpen(true)}>Set my location</button>
+        </div>
+      )}
+      {saved && !savedHasCoords && !claimerRole && (
         <p className="hint">{t("browseAreaHint")}</p>
       )}
       {hardRadius && (
@@ -161,7 +174,7 @@ export default function Browse() {
       {loading && <p>{t("browseLoading")}</p>}
       {!loading && error && <div className="form-error">{error}</div>}
       {!loading && !error && listings.length === 0 && <p>{t("browseEmpty")}</p>}
-      {!loading && !error && listings.length > 0 && shown.length === 0 && <p>{t("browseNoMatch")}</p>}
+      {!loading && !error && listings.length > 0 && shown.length === 0 && !mustLocate && <p>{t("browseNoMatch")}</p>}
       <div className="cards-grid">
         {shown.map((l) => (
           <ListingCard key={l.id} listing={l} now={now} myClaim={claimByListing[l.id]} onCancelClaim={cancelClaim} distanceKm={l.distanceKm} />
@@ -170,4 +183,5 @@ export default function Browse() {
     </section>
   );
 }
+
 
