@@ -16,6 +16,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   function setField(name, value) {
     setForm((f) => ({ ...f, [name]: value }));
@@ -82,7 +83,16 @@ export default function Register() {
           {field('name', t('authName'), { type: 'text', autoComplete: 'name', required: true })}
           {field('email', t('authEmail'), { type: 'email', autoComplete: 'email', required: true })}
           {field('mobile', t('authMobileShort'), { type: 'tel', autoComplete: 'tel', required: true })}
-          {field('password', t('authPassword'), { type: 'password', autoComplete: 'new-password', required: true })}
+          <div className="field">
+            <label htmlFor="reg-password">{t('authPassword')}</label>
+            <span className="pw-wrap">
+              <input id="reg-password" type={showPw ? 'text' : 'password'} autoComplete="new-password" required
+                value={form.password} onChange={(e) => setField('password', e.target.value)} />
+              <button type="button" className="pw-eye" aria-label={showPw ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPw((s) => !s)}>{showPw ? '🙈' : '👁️'}</button>
+            </span>
+            {errors.password && <p className="field-error">{errors.password}</p>}
+          </div>
           {accountType === 'NGO' && (
             <>
               {field('orgName', t('authOrgName'), { type: 'text', autoComplete: 'organization', required: true })}
@@ -100,3 +110,4 @@ export default function Register() {
     </main>
   );
 }
+

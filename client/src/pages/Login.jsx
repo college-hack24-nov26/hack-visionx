@@ -9,6 +9,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -35,8 +36,12 @@ export default function Login() {
           </div>
           <div className="field">
             <label htmlFor="login-password">{t('authPassword')}</label>
-            <input id="login-password" type="password" autoComplete="current-password" required
-              value={password} onChange={(e) => setPassword(e.target.value)} />
+            <span className="pw-wrap">
+              <input id="login-password" type={showPw ? 'text' : 'password'} autoComplete="current-password" required
+                value={password} onChange={(e) => setPassword(e.target.value)} />
+              <button type="button" className="pw-eye" aria-label={showPw ? 'Hide password' : 'Show password'}
+                onClick={() => setShowPw((s) => !s)}>{showPw ? '🙈' : '👁️'}</button>
+            </span>
           </div>
           {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
@@ -48,3 +53,4 @@ export default function Login() {
     </main>
   );
 }
+
