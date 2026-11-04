@@ -1,195 +1,83 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { api, API_BASE } from "../lib/api";
-import { useAuth } from "../context/AuthContext";
-import { portionsText, timeLeft } from "../lib/format";
-import LiveShareControl from "../components/LiveShareControl";
+import { useEffect, useRef, useState } from "react";
+import { api } from "../lib/api";
+import { haversineKm } from "../lib/location";
 
-const STATUS_LABELS = {
-  DRAFT: "Draft",
-  LIVE: "Live",
-  PARTIALLY_CLAIMED: "Partly claimed",
-  FULLY_CLAIMED: "Fully claimed",
-  EXPIRED: "Expired",
-  CANCELLED: "Cancelled",
-};
-
-const CLAIM_STATUS_LABELS = {
-  CONFIRMED: "Confirmed",
-  COLLECTED: "Collected",
-  CANCELLED: "Cancelled",
-  CANCELLED_LATE: "Cancelled (late)",
-  CANCELLED_BY_PROVIDER: "Cancelled by donor",
-  EXPIRED: "Expired",
-};
-
-// "3 meals" style text for any count, reusing portionsText's own unit words
-function countText(listing, n) {
-  const s = portionsText({ portionsRemaining: n, portionCount: n, bulkUnit: listing.bulkUnit, portionType: listing.portionType });
-  return s.replace(` of ${n}`, "").replace(" left", "");
-}
-
-function claimerLabel(claimer) {
-  if (!claimer) return "Claimer";
-  if (claimer.orgName) return `${claimer.orgName} (NGO)`;
-  return claimer.name || "Claimer";
-}
-
-export default function MyListings() {
-  const { user, loading: authLoading } = useAuth();
-  const [listings, setListings] = useState([]);
-  const [received, setReceived] = useState([]);
-  const [loading, setLoading] = useState(true);
+// Donor-side live location sharing for one CONFIRMED claim (C5).
+// Watches the donor's position and posts it to the backend, throttled
+// to a 25 m move or a 20 second heartbeat, until stopped.
+export default function LiveShareControl({ claim }) {
+  const [sharing, setSharing] = useState(!!claim.liveSharing);
   const [error, setError] = useState("");
-  const [codes, setCodes] = useState({});
-  const [verifyMsg, setVerifyMsg] = useState({});
-  const [busyId, setBusyId] = useState("");
+  const [lastSent, setLastSent] = useState(null);
+  const watchId = useRef(null);
+  const lastRef = useRef(null); // { point: {lat, lng}, at: ms }
 
-  const load = useCallback(() => {
-    api("/api/listings/mine").then(({ status, data }) => {
-      if (status === 200) setListings(data.listings || []);
-      else setError(data.error || "Could not load your listings");
-      setLoading(false);
+  async function send(point) {
+    lastRef.current = { point, at: Date.now() };
+    const { status } = await api(`/api/claims/${claim.id}/live-location`, {
+      method: "POST",
+      body: { lat: point.lat, lng: point.lng },
     });
-  }, []);
-
-  const loadReceived = useCallback(() => {
-    api("/api/claims/received").then(({ status, data }) => {
-      if (status === 200) setReceived(data.claims || []);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (user && user.activeRole === "PROVIDER") { load(); loadReceived(); }
-    else setLoading(false);
-  }, [user, load, loadReceived]);
-
-  const claimsByListing = useMemo(() => {
-    const map = {};
-    for (const c of received) {
-      const lid = c.listingId || c.listing?.id;
-      if (!lid) continue;
-      if (!map[lid]) map[lid] = [];
-      map[lid].push(c);
-    }
-    return map;
-  }, [received]);
-
-  async function cancel(id) {
-    if (!window.confirm("Cancel this listing? Claimers will no longer see it.")) return;
-    const { status, data } = await api(`/api/listings/${id}/cancel`, { method: "POST" });
-    if (status === 200) { load(); loadReceived(); }
-    else setError(data.error || "Could not cancel this listing");
+    if (status === 200) setLastSent(new Date());
   }
 
-  async function verify(claim) {
-    const code = (codes[claim.id] || "").trim().toUpperCase();
-    if (!code) {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: "Type the claimer's pickup code first." } }));
+  function start() {
+    setError("");
+    if (!("geolocation" in navigator)) {
+      setError("This browser cannot share location.");
       return;
     }
-    setBusyId(claim.id);
-    const { status, data } = await api(`/api/claims/${claim.id}/verify`, {
-      method: "POST",
-      body: JSON.stringify({ code }),
-    });
-    setBusyId("");
-    if (status === 200 && data.alreadyCollected) {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: true, text: "Already collected earlier." } }));
-      loadReceived();
-    } else if (status === 200) {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: true, text: "✅ Collected — pickup complete." } }));
-      loadReceived();
-    } else if (status === 401) {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: "Incorrect pickup code — check the code and try again." } }));
-    } else if (status === 423) {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: "Verification is locked after too many wrong tries. Wait 10 minutes." } }));
-    } else {
-      setVerifyMsg((m) => ({ ...m, [claim.id]: { ok: false, text: data.error || "Could not verify this code" } }));
-    }
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const last = lastRef.current;
+        if (!last || haversineKm(last.point, point) >= 0.025 || Date.now() - last.at >= 20000) {
+          send(point);
+        }
+      },
+      () => setError("Location permission was denied or is unavailable."),
+      { enableHighAccuracy: true, maximumAge: 5000 }
+    );
+    watchId.current = id;
+    setSharing(true);
   }
 
-  if (authLoading) return <p>Loading…</p>;
-  if (!user) return <p>Please <Link to="/login">log in</Link> to see your listings.</p>;
-  if (user.activeRole !== "PROVIDER")
-    return <div className="notice">You are in Claimer mode. Switch to <strong>Donor</strong> in the top bar to manage your listings.</div>;
+  async function stop() {
+    if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
+    watchId.current = null;
+    setSharing(false);
+    await api(`/api/claims/${claim.id}/stop`, { method: "POST" });
+  }
+
+  // If this claim was already sharing when the page loaded, resume watching.
+  useEffect(() => {
+    if (claim.liveSharing) start();
+    return () => {
+      if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <section>
-      <div className="card-top">
-        <h1>My listings</h1>
-        <Link className="btn btn-primary" to="/listings/new">+ New listing</Link>
-      </div>
-      {loading && <p>Loading…</p>}
-      {!loading && error && <div className="form-error">{error}</div>}
-      {!loading && !error && listings.length === 0 && <p>You have not listed any food yet.</p>}
-      <div className="mine-list">
-        {listings.map((l) => (
-          <div key={l.id} className="mine-wrap">
-            <div className="mine-row">
-              {l.photoUrl ? (
-                <img className="mine-thumb" src={API_BASE + l.photoUrl} alt="" />
-              ) : (
-                <div className="mine-thumb card-photo-empty">🍲</div>
-              )}
-              <div className="mine-main">
-                <div className="card-top">
-                  <h3>{l.foodName}</h3>
-                  <span className={`status-chip st-${l.status}`}>{STATUS_LABELS[l.status] || l.status}</span>
-                </div>
-                <p className="card-meta">{portionsText(l)} · ⏰ {timeLeft(l.deadline).label}</p>
-                <p className="card-meta">📍 {l.pickupLocation}</p>
-              </div>
-              <div className="mine-actions">
-                {(l.status === "DRAFT" || l.status === "LIVE" || l.status === "PARTIALLY_CLAIMED") && (
-                  <Link className="btn btn-ghost" to={`/listings/${l.id}/edit`}>Edit</Link>
-                )}
-                {(l.status === "DRAFT" || l.status === "LIVE" || l.status === "PARTIALLY_CLAIMED") && (
-                  <button className="btn btn-ghost" type="button" onClick={() => cancel(l.id)}>Cancel</button>
-                )}
-              </div>
-            </div>
-            {(claimsByListing[l.id] || []).length > 0 && (
-              <div className="received-box">
-                <strong>Claims received</strong>
-                {claimsByListing[l.id].map((claim) => (
-                  <div key={claim.id} className="received-row">
-                    <span>{claimerLabel(claim.claimer)} · {countText(l, claim.portions)}</span>
-                    <span className="chip">{CLAIM_STATUS_LABELS[claim.status] || claim.status}</span>
-                    {claim.status === "CONFIRMED" && claim.onWayAt && <span>🚶 On the way</span>}
-                    {claim.status === "COLLECTED" && claim.collectedAt && (
-                      <span>✅ {new Date(claim.collectedAt).toLocaleTimeString()}</span>
-                    )}
-                    {claim.status === "CONFIRMED" && (
-                      <span className="verify-box">
-                        <input
-                          className="verify-input"
-                          type="text"
-                          placeholder="Pickup code"
-                          maxLength={8}
-                          value={codes[claim.id] || ""}
-                          onChange={(e) => setCodes((m) => ({ ...m, [claim.id]: e.target.value.toUpperCase() }))}
-                        />
-                        <button type="button" className="btn btn-primary btn-small" disabled={busyId === claim.id} onClick={() => verify(claim)}>
-                          Verify pickup
-                        </button>
-                      </span>
-                    )}
-                    {verifyMsg[claim.id] && (
-                      <span className={verifyMsg[claim.id].ok ? "verify-ok" : "verify-err"}>{verifyMsg[claim.id].text}</span>
-                    )}
-                    {claim.status === "CONFIRMED" && (
-                      <div style={{ flexBasis: "100%" }}>
-                        <LiveShareControl claim={claim} />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
+    <div className="verify-box">
+      {sharing ? (
+        <>
+          <span className="verify-ok">
+            🟢 Sharing your live location{lastSent ? ` · updated ${lastSent.toLocaleTimeString()}` : ""}
+          </span>
+          <button type="button" className="btn btn-danger btn-small" onClick={stop}>
+            Stop sharing
+          </button>
+        </>
+      ) : (
+        <>
+          <button type="button" className="btn btn-primary btn-small" onClick={start}>
+            Share live location
+          </button>
+          <span className="hint">Lets the claimer follow you on their pickup map.</span>
+        </>
+      )}
+      {error && <span className="verify-err">{error}</span>}
+    </div>
   );
 }
